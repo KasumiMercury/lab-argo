@@ -1,0 +1,13 @@
+# driver:
+#   name: nfs.csi.k8s.io
+#   repository: registry.k8s.io/sig-storage/
+#   tag: v4.11.0
+#
+# storageClasses:
+# - name: nfs-csi
+#   defaultClass: false
+#   parameters:
+#     server: 192.168.110.5
+#     share: /nfs/k8s
+#   mountOptions:
+#   - nfsvers=4.1
