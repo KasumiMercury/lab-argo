@@ -11,3 +11,7 @@
 #     share: /nfs/k8s
 #   mountOptions:
 #   - nfsvers=4.1
+
+parameters:
+  server: 192.168.110.5
+  share: /nfs/k8s
