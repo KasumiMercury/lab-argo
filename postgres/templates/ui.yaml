@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgres-operator-ui
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://opensource.zalando.com/postgres-operator/charts/postgres-operator-ui
+    chart: postgres-operator-ui
+    targetRevision: 1.14.0
+    helm:
+      releaseName: postgres-operator-ui
+      valueFiles:
+      - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: postgres-operator
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
