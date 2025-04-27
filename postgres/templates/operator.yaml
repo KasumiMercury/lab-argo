@@ -15,7 +15,7 @@ spec:
       - values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: postgres-operator
   syncPolicy:
     automated:
       prune: true
