@@ -1,21 +1,32 @@
+kind: "postgresql"
 apiVersion: "acid.zalan.do/v1"
-kind: postgresql
+
 metadata:
-  name: acid-minimal-cluster
+  name: "test"
+  namespace: "default"
+  labels:
+    team: acid
+
 spec:
   teamId: "acid"
-  volume:
-    size: 1Gi
-    storageClass: nfs-csi
-  numberOfInstances: 1
-  users:
-    zalando:  # database owner
-    - superuser
-    - createdb
-    foo_user: []  # role for application foo
-  databases:
-    foo: zalando  # dbname: owner
-  preparedDatabases:
-    bar: {}
   postgresql:
     version: "17"
+  numberOfInstances: 1
+  maintenanceWindows:
+  volume:
+    size: "10Gi"
+    storageClass: "nfs-csi"
+  users:
+    mercury: []
+  databases:
+    test: mercury
+  allowedSourceRanges:
+    # IP ranges to access your cluster go here
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi
+    limits:
+      cpu: 500m
+      memory: 500Mi
