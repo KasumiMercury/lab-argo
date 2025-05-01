@@ -6,7 +6,7 @@ spec:
   teamId: "acid"
   volume:
     size: 1Gi
-    storageClass: "nfs-csi"
+    storageClass: nfs-csi
   numberOfInstances: 1
   users:
     zalando:  # database owner
