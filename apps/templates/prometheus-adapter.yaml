@@ -18,4 +18,5 @@ spec:
       releaseName: prometheus-adapter-release
       valueFiles:
         - values.yaml
+      version: v3
 
