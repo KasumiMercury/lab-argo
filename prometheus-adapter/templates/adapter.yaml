@@ -9,7 +9,7 @@ spec:
   source:
     repoURL: https://prometheus-community.github.io/helm-charts
     chart: prometheus-community
-    # targetRevision: 
+    targetRevision: 0.12.0
     helm:
       releaseName: prometheus-adapter
       valueFiles:
