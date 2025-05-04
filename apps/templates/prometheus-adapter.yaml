@@ -15,7 +15,7 @@ spec:
     repoURL: {{ .Values.spec.source.repoURL }}
     targetRevision: {{ .Values.spec.source.targetRevision }}
     helm:
-      releaseName: prometheus_adapter_release
+      releaseName: prometheus-adapter-release
       valueFiles:
         - values.yaml
 
