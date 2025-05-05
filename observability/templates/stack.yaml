@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kube-prometheus-stack
+  name: prometheus-stack
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-options: ServerSideApply=true
@@ -12,12 +12,12 @@ spec:
     chart: kube-prometheus-stack
     targetRevision: v71.2.0
     helm:
-      releaseName: kube-prometheus-stack
+      releaseName: prometheus-stack
       valueFiles:
       - values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: kube-prometheus-stack
+    namespace: observability
   syncPolicy:
     automated:
       prune: true
