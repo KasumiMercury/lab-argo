@@ -14,6 +14,11 @@ spec:
     path: tailscale
     repoURL: {{ .Values.spec.source.repoURL }}
     targetRevision: {{ .Values.spec.source.targetRevision }}
+    helm:
+      releaseName: tailscale-operator
+      valueFiles:
+        - values.yaml
+      version: v3
   syncPolicy:
     automated:
       prune: true
