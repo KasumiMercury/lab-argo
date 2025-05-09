@@ -6,9 +6,9 @@ metadata:
 spec:
   defaultBackend:
     service:
-      name: prometheus-stack-grafana.grafana
+      name: prometheus-stack-grafana
       port:
-        number: 3000
+        number: 80
   ingressClassName: tailscale
   tls:
     - hosts:
