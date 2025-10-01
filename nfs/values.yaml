@@ -1,4 +1,3 @@
-# NFS server parameters
 parameters:
-  server: 192.168.110.5
-  share: /nfs/k8s
+  server: nfs.example.internal
+  share: /exports/default
