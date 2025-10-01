@@ -2,3 +2,32 @@
 externalServices:
   operatorUI:
     nodePort: 32080
+
+# PostgreSQL Cluster Configuration
+cluster:
+  name: test
+  namespace: default
+  teamId: acid
+  postgresql:
+    version: "17"
+  numberOfInstances: 1
+  volume:
+    size: 10Gi
+    storageClass: nfs-csi
+  users:
+    mercury: []
+  databases:
+    test: mercury
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi
+    limits:
+      cpu: 500m
+      memory: 500Mi
+  # Optional: maintenance windows (empty by default)
+  # maintenanceWindows:
+  #   - Mon:01:00-06:00
+  # Optional: allowed source IP ranges (empty by default)
+  # allowedSourceRanges:
+  #   - 192.168.0.0/16

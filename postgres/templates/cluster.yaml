@@ -2,31 +2,43 @@ kind: "postgresql"
 apiVersion: "acid.zalan.do/v1"
 
 metadata:
-  name: "test"
-  namespace: "default"
+  name: {{ .Values.cluster.name | quote }}
+  namespace: {{ .Values.cluster.namespace | quote }}
   labels:
-    team: acid
+    team: {{ .Values.cluster.teamId }}
 
 spec:
-  teamId: "acid"
+  teamId: {{ .Values.cluster.teamId | quote }}
   postgresql:
-    version: "17"
-  numberOfInstances: 1
+    version: {{ .Values.cluster.postgresql.version | quote }}
+  numberOfInstances: {{ .Values.cluster.numberOfInstances }}
+  {{- if .Values.cluster.maintenanceWindows }}
   maintenanceWindows:
+  {{- range .Values.cluster.maintenanceWindows }}
+    - {{ . }}
+  {{- end }}
+  {{- end }}
   volume:
-    size: "10Gi"
-    storageClass: "nfs-csi"
+    size: {{ .Values.cluster.volume.size | quote }}
+    storageClass: {{ .Values.cluster.volume.storageClass | quote }}
   users:
-    mercury: []
+  {{- range $user, $databases := .Values.cluster.users }}
+    {{ $user }}: {{ toJson $databases }}
+  {{- end }}
   databases:
-    test: mercury
+  {{- range $db, $owner := .Values.cluster.databases }}
+    {{ $db }}: {{ $owner }}
+  {{- end }}
+  {{- if .Values.cluster.allowedSourceRanges }}
   allowedSourceRanges:
-    # IP ranges to access your cluster go here
-  
+  {{- range .Values.cluster.allowedSourceRanges }}
+    - {{ . }}
+  {{- end }}
+  {{- end }}
   resources:
     requests:
-      cpu: 100m
-      memory: 100Mi
+      cpu: {{ .Values.cluster.resources.requests.cpu }}
+      memory: {{ .Values.cluster.resources.requests.memory }}
     limits:
-      cpu: 500m
-      memory: 500Mi
+      cpu: {{ .Values.cluster.resources.limits.cpu }}
+      memory: {{ .Values.cluster.resources.limits.memory }}
