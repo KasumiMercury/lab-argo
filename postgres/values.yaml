@@ -1,0 +1,4 @@
+# External Service NodePort Configuration
+externalServices:
+  operatorUI:
+    nodePort: 32080

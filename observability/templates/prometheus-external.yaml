@@ -7,7 +7,7 @@ spec:
   type: NodePort
   ports:
   - port: 80
-    nodePort: 30090
+    nodePort: {{ .Values.externalServices.prometheus.nodePort }}
     targetPort: 9090
     protocol: TCP
     name: http

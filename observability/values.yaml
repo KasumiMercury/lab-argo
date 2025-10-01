@@ -1,0 +1,6 @@
+# External Service NodePort Configuration
+externalServices:
+  grafana:
+    nodePort: 30030
+  prometheus:
+    nodePort: 30090
