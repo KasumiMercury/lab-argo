@@ -2,3 +2,6 @@
 *secret.yml
 !sealed*-secret*.yaml
 !sealed*-secret*.yml
+
+# Helm dependency artifacts
+**/charts/
