@@ -1,3 +1,7 @@
+{{- $cfg := index .Values.applications "postgres" | default dict -}}
+{{- $namespace := default "argocd" $cfg.destinationNamespace -}}
+{{- $syncOptions := default (list) $cfg.syncOptions -}}
+{{- $hasSyncOptions := gt (len $syncOptions) 0 -}}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -7,7 +11,7 @@ metadata:
   - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
-    namespace: argocd
+    namespace: {{ $namespace }}
     server: {{ .Values.spec.destination.server }}
   project: default
   source:
@@ -18,3 +22,9 @@ spec:
     automated:
       prune: true
       selfHeal: true
+{{- if $hasSyncOptions }}
+    syncOptions:
+{{- range $syncOptions }}
+    - {{ . }}
+{{- end }}
+{{- end }}

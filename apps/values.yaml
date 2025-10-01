@@ -4,3 +4,23 @@ spec:
   source:
     repoURL: https://github.com/KasumiMercury/lab-argo.git
     targetRevision: HEAD
+applications:
+  nfs:
+    destinationNamespace: argocd
+    syncOptions: []
+  observability:
+    destinationNamespace: observability
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+  postgres:
+    destinationNamespace: argocd
+    syncOptions: []
+  sealedSecrets:
+    destinationNamespace: kube-system
+    syncOptions:
+      - CreateNamespace=true
+  tailscale:
+    destinationNamespace: tailscale
+    syncOptions:
+      - CreateNamespace=true
