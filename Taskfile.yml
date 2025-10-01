@@ -1,0 +1,178 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  DEFAULT_CONTROLLER_NAMESPACE: kube-system
+  DEFAULT_CONTROLLER_NAME: sealed-secrets
+
+tasks:
+  default:
+    cmds:
+      - echo "Hello, World!"
+    silent: true
+
+  secret:seal:
+    internal: true
+    vars:
+      controllerNamespace: '{{ coalesce .CONTROLLER_NAMESPACE .DEFAULT_CONTROLLER_NAMESPACE }}'
+      controllerName: '{{ coalesce .CONTROLLER_NAME .DEFAULT_CONTROLLER_NAME }}'
+    preconditions:
+      - sh: 'test -f {{.SECRET}}'
+        msg: 'plaintext secret not found at {{.SECRET}}'
+    cmds:
+      - >-
+        kubeseal
+        --format yaml
+        --controller-name "{{.controllerName}}"
+        --controller-namespace "{{.controllerNamespace}}"
+        < {{.SECRET}} > {{.OUTPUT}}
+      - >-
+        kubeseal
+        --validate
+        --controller-name "{{.controllerName}}"
+        --controller-namespace "{{.controllerNamespace}}"
+        < {{.OUTPUT}}
+
+  secret:validate:
+    internal: true
+    vars:
+      controllerNamespace: '{{ coalesce .CONTROLLER_NAMESPACE .DEFAULT_CONTROLLER_NAMESPACE }}'
+      controllerName: '{{ coalesce .CONTROLLER_NAME .DEFAULT_CONTROLLER_NAME }}'
+    preconditions:
+      - sh: 'test -f {{.SEALED}}'
+        msg: 'sealed secret not found at {{.SEALED}}'
+    cmds:
+      - >-
+        kubeseal
+        --validate
+        --controller-name "{{.controllerName}}"
+        --controller-namespace "{{.controllerNamespace}}"
+        < {{.SEALED}}
+
+  tailscale:generate-secret:
+    desc: Render a plaintext Secret manifest for the Tailscale operator OAuth client
+    vars:
+      clientId: '{{ .CLIENT_ID | default "ts-client-id-placeholder" }}'
+      clientSecret: '{{ .CLIENT_SECRET | default "ts-client-secret-placeholder" }}'
+      outputPath: '{{ .OUTPUT | default "tailscale/templates/secret.yaml" }}'
+    cmds:
+      - |
+        cat <<'EOS' > {{.outputPath}}
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: operator-oauth
+          namespace: tailscale
+        stringData:
+          client_id: {{.clientId}}
+          client_secret: {{.clientSecret}}
+        EOS
+
+  tailscale:seal:
+    desc: Regenerate the Tailscale operator OAuth SealedSecret using kubeseal
+    vars:
+      secretPath: '{{ .SECRET | default "tailscale/templates/secret.yaml" }}'
+      sealedPath: '{{ .OUTPUT | default "tailscale/templates/sealed-secret.yaml" }}'
+      controllerNamespace: '{{ coalesce .TS_CONTROLLER_NAMESPACE .DEFAULT_CONTROLLER_NAMESPACE }}'
+      controllerName: '{{ coalesce .TS_CONTROLLER_NAME .DEFAULT_CONTROLLER_NAME }}'
+    cmds:
+      - task: secret:seal
+        vars:
+          SECRET: '{{.secretPath}}'
+          OUTPUT: '{{.sealedPath}}'
+          CONTROLLER_NAMESPACE: '{{.controllerNamespace}}'
+          CONTROLLER_NAME: '{{.controllerName}}'
+
+  tailscale:validate:
+    desc: Validate the existing Tailscale SealedSecret manifest
+    vars:
+      sealedPath: '{{ .SEALED | default "tailscale/templates/sealed-secret.yaml" }}'
+      controllerNamespace: '{{ coalesce .TS_CONTROLLER_NAMESPACE .DEFAULT_CONTROLLER_NAMESPACE }}'
+      controllerName: '{{ coalesce .TS_CONTROLLER_NAME .DEFAULT_CONTROLLER_NAME }}'
+    cmds:
+      - task: secret:validate
+        vars:
+          SEALED: '{{.sealedPath}}'
+          CONTROLLER_NAMESPACE: '{{.controllerNamespace}}'
+          CONTROLLER_NAME: '{{.controllerName}}'
+
+  nfs:generate-secret:
+    desc: Render a plaintext Secret manifest holding the NFS server parameters
+    vars:
+      server: '{{ coalesce .SERVER .NFS_SERVER }}'
+      share: '{{ coalesce .SHARE .NFS_SHARE }}'
+      secretName: '{{ .NAME | default "nfs-parameters" }}'
+      secretNamespace: '{{ .NAMESPACE | default "kube-system" }}'
+      outputPath: '{{ .OUTPUT | default "nfs/templates/secret.yaml" }}'
+    preconditions:
+      - sh: 'test -n "{{.server}}"'
+        msg: 'set SERVER= or NFS_SERVER='
+      - sh: 'test -n "{{.share}}"'
+        msg: 'set SHARE= or NFS_SHARE='
+    cmds:
+      - |
+        cat <<'EOS' > {{.outputPath}}
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: {{.secretName}}
+          namespace: {{.secretNamespace}}
+        stringData:
+          server: {{.server}}
+          share: {{.share}}
+        EOS
+
+  nfs:seal:
+    desc: Regenerate the NFS parameters SealedSecret using kubeseal
+    vars:
+      secretPath: '{{ .SECRET | default "nfs/templates/secret.yaml" }}'
+      sealedPath: '{{ .OUTPUT | default "nfs/templates/sealed-secret.yaml" }}'
+      controllerNamespace: '{{ coalesce .NFS_CONTROLLER_NAMESPACE .DEFAULT_CONTROLLER_NAMESPACE }}'
+      controllerName: '{{ coalesce .NFS_CONTROLLER_NAME .DEFAULT_CONTROLLER_NAME }}'
+    cmds:
+      - task: secret:seal
+        vars:
+          SECRET: '{{.secretPath}}'
+          OUTPUT: '{{.sealedPath}}'
+          CONTROLLER_NAMESPACE: '{{.controllerNamespace}}'
+          CONTROLLER_NAME: '{{.controllerName}}'
+
+  nfs:validate:
+    desc: Validate the NFS parameters SealedSecret manifest
+    vars:
+      sealedPath: '{{ .SEALED | default "nfs/templates/sealed-secret.yaml" }}'
+      controllerNamespace: '{{ coalesce .NFS_CONTROLLER_NAMESPACE .DEFAULT_CONTROLLER_NAMESPACE }}'
+      controllerName: '{{ coalesce .NFS_CONTROLLER_NAME .DEFAULT_CONTROLLER_NAME }}'
+    cmds:
+      - task: secret:validate
+        vars:
+          SEALED: '{{.sealedPath}}'
+          CONTROLLER_NAMESPACE: '{{.controllerNamespace}}'
+          CONTROLLER_NAME: '{{.controllerName}}'
+
+  nfs:seal-from-env:
+    desc: Generate the plaintext NFS Secret from environment values and seal it in one step
+    vars:
+      server: '{{ coalesce .SERVER .NFS_SERVER }}'
+      share: '{{ coalesce .SHARE .NFS_SHARE }}'
+      secretName: '{{ .NAME | default "nfs-parameters" }}'
+      secretNamespace: '{{ .NAMESPACE | default "kube-system" }}'
+      secretPath: '{{ .SECRET | default "nfs/templates/secret.yaml" }}'
+      sealedPath: '{{ .OUTPUT | default "nfs/templates/sealed-secret.yaml" }}'
+      controllerNamespace: '{{ coalesce .NFS_CONTROLLER_NAMESPACE .DEFAULT_CONTROLLER_NAMESPACE }}'
+      controllerName: '{{ coalesce .NFS_CONTROLLER_NAME .DEFAULT_CONTROLLER_NAME }}'
+    cmds:
+      - task: nfs:generate-secret
+        vars:
+          SERVER: '{{.server}}'
+          SHARE: '{{.share}}'
+          NAME: '{{.secretName}}'
+          NAMESPACE: '{{.secretNamespace}}'
+          OUTPUT: '{{.secretPath}}'
+      - task: nfs:seal
+        vars:
+          SECRET: '{{.secretPath}}'
+          OUTPUT: '{{.sealedPath}}'
+          NFS_CONTROLLER_NAMESPACE: '{{.controllerNamespace}}'
+          NFS_CONTROLLER_NAME: '{{.controllerName}}'
