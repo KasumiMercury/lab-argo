@@ -1,0 +1,4 @@
+[tools]
+helm = "latest"
+kubectl = "latest"
+kubeseal = "latest"
