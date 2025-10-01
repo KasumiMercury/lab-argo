@@ -11,8 +11,6 @@ spec:
     targetRevision: 1.14.0
     helm:
       releaseName: postgres-operator
-      valueFiles:
-      - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: postgres-operator

@@ -11,8 +11,6 @@ spec:
     targetRevision: v4.11.0
     helm:
       releaseName: csi-driver-nfs
-      valueFiles:
-      - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system

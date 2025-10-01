@@ -11,8 +11,6 @@ spec:
     targetRevision: v71.2.0
     helm:
       releaseName: prometheus-stack
-      valueFiles:
-      - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
