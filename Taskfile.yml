@@ -92,6 +92,15 @@ tasks:
       - helm lint platform/{{.APP}} --quiet
       - task render APP={{.APP}} >/dev/null
 
+  bootstrap:
+    desc: Apply the root Application (app-of-apps) to the cluster in KUBECONFIG
+    preconditions:
+      - sh: test -f "$KUBECONFIG"
+        msg: "kubeconfig not found: {{.KUBECONFIG}} (build the cluster with lab-proxmox first, or set KUBECONFIG=...)"
+    cmds:
+      - echo "applying bootstrap/root.yaml to $(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')"
+      - kubectl apply -f bootstrap/root.yaml
+
   # Secrets are built in memory from environment variables (strenv) and sealed with the cluster's public
   # key, so plaintext never touches the disk or the command line. kubeseal talks to
   # kube-system/sealed-secrets-controller, the name set in platform/sealed-secrets.

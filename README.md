@@ -24,7 +24,7 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 
 ## Bootstrap
 1. Build the cluster with lab-proxmox (`task deploy TF_ENV=k8s`). The kubeconfig lands in `../lab-proxmox/ansible/artifacts/k8s.kubeconfig`, which the Taskfile uses by default (override with `KUBECONFIG=...`)
-2. `kubectl apply -f bootstrap/root.yaml`
+2. `task bootstrap` (applies `bootstrap/root.yaml` to the cluster in `KUBECONFIG`)
 3. Once `sealed-secrets` is healthy, seal the credentials with the new cluster's key, commit and push:
    - `task seal:tailscale` → `platform/tailscale/templates/operator-oauth.sealedsecret.yaml` (OAuth client with the scopes and tag `tag:k8s-operator` described in the Tailscale operator docs)
    - `task seal:grafana` → `platform/kube-prometheus-stack/templates/grafana-admin.sealedsecret.yaml`
