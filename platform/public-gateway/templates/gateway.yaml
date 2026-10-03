@@ -10,7 +10,7 @@ metadata:
   name: public
   {{- if .Values.tunnelID }}
   annotations:
-    external-dns.alpha.kubernetes.io/target: {{ .Values.tunnelID }}.cfargotunnel.com
+    external-dns.kubernetes.io/target: {{ .Values.tunnelID }}.cfargotunnel.com
   {{- end }}
 spec:
   gatewayClassName: cilium
