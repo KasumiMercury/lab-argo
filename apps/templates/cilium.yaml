@@ -1,0 +1,47 @@
+{{- if .Values.cilium.enabled }}
+{{- $pin := .Files.Get "cilium/version.yaml" | fromYaml }}
+{{- if not $pin.version }}
+{{- fail "cilium/version.yaml not found: is the cilium submodule checked out?" }}
+{{- end }}
+# Cilium was installed by the Ansible bootstrap (helm install cilium ... -n kube-system) and is
+# adopted here. Same release name and namespace, chart and values from the shared cilium/ directory.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cilium
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.cilium.syncWave | quote }}
+  # No resources finalizer: deleting the Application must not remove the CNI (cilium/README.md)
+spec:
+  project: default
+  sources:
+    - repoURL: {{ $pin.repo }}
+      chart: {{ $pin.chart }}
+      targetRevision: {{ $pin.version | quote }}
+      helm:
+        releaseName: cilium
+        valueFiles:
+          - $values/cilium/values.yaml
+    - repoURL: {{ .Values.repoURL }}
+      targetRevision: {{ .Values.targetRevision }}
+      ref: values
+  destination:
+    server: {{ .Values.destinationServer }}
+    namespace: kube-system
+  # The chart generates the Hubble CA and certificates with random values on every render
+  # (Helm lookup does not work in Argo CD). Keep the certificates that exist in the cluster.
+  ignoreDifferences:
+    - kind: Secret
+      name: cilium-ca
+      namespace: kube-system
+      jsonPointers:
+        - /data
+    - kind: Secret
+      name: hubble-server-certs
+      namespace: kube-system
+      jsonPointers:
+        - /data
+  syncPolicy:
+    {{- include "apps.syncPolicy" (dict "syncOptions" (list "RespectIgnoreDifferences=true")) | nindent 4 }}
+{{- end }}

@@ -1,0 +1,47 @@
+kube-prometheus-stack:
+  # MicroK8s runs the control plane inside kubelite: the controller-manager and scheduler bind to
+  # localhost, there is no etcd (dqlite), and kube-proxy is replaced by Cilium. Scraping them would only
+  # produce "target down" alerts.
+  kubeControllerManager:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeEtcd:
+    enabled: false
+  kubeProxy:
+    enabled: false
+
+  prometheus:
+    prometheusSpec:
+      # Pick up ServiceMonitors/PodMonitors/rules from every Application, not only this release
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+      ruleSelectorNilUsesHelmValues: false
+      probeSelectorNilUsesHelmValues: false
+      retention: 15d
+      retentionSize: 18GB
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: nfs-csi
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 20Gi
+
+  grafana:
+    admin:
+      # Delivered by templates/grafana-admin.sealedsecret.yaml (task seal:grafana)
+      existingSecret: grafana-admin
+      userKey: admin-user
+      passwordKey: admin-password
+    # Reachable on the tailnet as https://grafana.<tailnet>.ts.net
+    ingress:
+      enabled: true
+      ingressClassName: tailscale
+      hosts: []
+      path: /
+      tls:
+        - hosts:
+            - grafana

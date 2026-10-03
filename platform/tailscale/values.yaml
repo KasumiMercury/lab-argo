@@ -1,0 +1,5 @@
+tailscale-operator:
+  # OAuth client credentials are not set here: the operator reads the Secret "operator-oauth",
+  # delivered by templates/operator-oauth.sealedsecret.yaml (task seal:tailscale).
+  operatorConfig:
+    hostname: k8s-operator

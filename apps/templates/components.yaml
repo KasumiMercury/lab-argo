@@ -1,0 +1,29 @@
+{{- range $name, $c := .Values.components }}
+{{- if ne $c.enabled false }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ $name }}
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $c.syncWave | default "0" | quote }}
+  {{- if $c.finalizer }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  {{- end }}
+spec:
+  project: default
+  source:
+    repoURL: {{ $.Values.repoURL }}
+    targetRevision: {{ $.Values.targetRevision }}
+    path: platform/{{ $name }}
+    helm:
+      releaseName: {{ $c.releaseName }}
+  destination:
+    server: {{ $.Values.destinationServer }}
+    namespace: {{ $c.namespace }}
+  syncPolicy:
+    {{- include "apps.syncPolicy" (dict "syncOptions" $c.syncOptions) | nindent 4 }}
+{{- end }}
+{{- end }}

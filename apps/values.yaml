@@ -1,0 +1,55 @@
+# Git repository every Application reads from
+repoURL: https://github.com/KasumiMercury/lab-argo.git
+targetRevision: HEAD
+destinationServer: https://kubernetes.default.svc
+
+# Cilium is rendered from the shared cilium/ directory (apps/cilium is a symlink to it).
+# Chart pin comes from cilium/version.yaml and values from cilium/values.yaml.
+cilium:
+  enabled: true
+  syncWave: "-3"
+
+# Platform components. Each one is an umbrella Helm chart under platform/<name> whose
+# Chart.yaml/Chart.lock pin the upstream chart (render locally with `task render APP=<name>`).
+#   namespace:   destination namespace (created when missing)
+#   releaseName: Helm release name; keep it stable, resource names depend on it
+#   syncWave:    order relative to the other Applications (needs the Application health check in argocd)
+#   finalizer:   delete the component's resources when its Application is deleted
+#   syncOptions: extra sync options added to CreateNamespace=true
+components:
+  argocd:
+    namespace: argocd
+    # Must match the release installed by the Ansible bootstrap (lab-proxmox roles/argocd)
+    releaseName: argocd
+    syncWave: "-2"
+    # Deleting the Application must never delete Argo CD itself
+    finalizer: false
+    syncOptions:
+      - ServerSideApply=true
+  sealed-secrets:
+    namespace: kube-system
+    releaseName: sealed-secrets
+    syncWave: "-1"
+    finalizer: true
+  csi-driver-nfs:
+    namespace: kube-system
+    releaseName: csi-driver-nfs
+    syncWave: "-1"
+    finalizer: true
+  tailscale:
+    namespace: tailscale
+    releaseName: tailscale-operator
+    syncWave: "0"
+    finalizer: true
+    syncOptions:
+      # SealedSecret CRD may not exist yet on the first sync
+      - SkipDryRunOnMissingResource=true
+  kube-prometheus-stack:
+    namespace: monitoring
+    releaseName: kube-prometheus-stack
+    syncWave: "1"
+    finalizer: true
+    syncOptions:
+      # CRDs are too large for client-side apply
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
