@@ -31,6 +31,20 @@ spec:
     spec:
       securityContext:
         fsGroup: 5984
+      # The image's entrypoint (set -e) chowns and chmods everything under /opt/couchdb and exits silently on a
+      # read-only ConfigMap mount. Copy the settings into local.d instead, on every start so Git stays the
+      # source. "00-" sorts before docker.ini, which stays the last file and takes the runtime config changes.
+      initContainers:
+        - name: config
+          image: "{{ .Values.couchdb.image.repository }}:{{ .Values.couchdb.image.tag }}"
+          command: ["cp", "/config/livesync.ini", "/opt/couchdb/etc/local.d/00-livesync.ini"]
+          volumeMounts:
+            - name: data
+              mountPath: /opt/couchdb/etc/local.d
+              subPath: local.d
+            - name: config
+              mountPath: /config
+              readOnly: true
       containers:
         - name: couchdb
           image: "{{ .Values.couchdb.image.repository }}:{{ .Values.couchdb.image.tag }}"
@@ -73,9 +87,6 @@ spec:
             - name: data
               mountPath: /opt/couchdb/etc/local.d
               subPath: local.d
-            - name: config
-              mountPath: /opt/couchdb/etc/default.d/livesync.ini
-              subPath: livesync.ini
       volumes:
         - name: config
           configMap:
