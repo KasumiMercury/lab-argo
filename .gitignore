@@ -1,7 +1,7 @@
+# Plaintext Secrets must never be committed; only kubeseal output (*.sealedsecret.yaml) is
 *secret.yaml
 *secret.yml
-!sealed*-secret*.yaml
-!sealed*-secret*.yml
+!*.sealedsecret.yaml
 
-# Helm dependency artifacts
+# Helm dependency artifacts (rebuilt from Chart.lock)
 **/charts/

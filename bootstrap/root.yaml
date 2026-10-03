@@ -1,0 +1,21 @@
+# Root Application (app-of-apps). Apply once after the Ansible bootstrap in lab-proxmox:
+#   kubectl apply -f bootstrap/root.yaml
+# Everything else is rendered from apps/ and managed by Argo CD from then on.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/KasumiMercury/lab-argo.git
+    targetRevision: HEAD
+    path: apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
