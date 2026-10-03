@@ -1,0 +1,32 @@
+# Cilium Helm values for the MicroK8s cluster built by lab-proxmox.
+# Read by the Ansible bootstrap and by the ArgoCD Application; keep it the single source of truth.
+
+# MicroK8s keeps CNI config and binaries under the snap data directory (required on MicroK8s)
+cni:
+  confPath: /var/snap/microk8s/current/args/cni-network
+  binPath: /var/snap/microk8s/current/opt/cni/bin
+
+ipam:
+  operator:
+    # Must match --cluster-cidr in /var/snap/microk8s/current/args/kube-proxy (MicroK8s default 10.1.0.0/16).
+    # The Ansible bootstrap asserts this before installing.
+    clusterPoolIPv4PodCIDRList:
+      - 10.1.0.0/16
+
+# kube-proxy replacement. The Ansible bootstrap disables MicroK8s' kube-proxy on every node when this is true.
+# 127.0.0.1:16443 reaches the API server from every node: kube-apiserver on control-plane nodes,
+# the MicroK8s apiserver-proxy (traefik) on worker nodes. Cilium runs with hostNetwork, so localhost works.
+kubeProxyReplacement: true
+k8sServiceHost: 127.0.0.1
+k8sServicePort: 16443
+
+operator:
+  replicas: 1
+
+# Keep socket-level load balancing in the host namespace only. Without this, Pod connections to
+# ClusterIPs bypass the netfilter rules of Tailscale proxies (LoadBalancer Services, the
+# tailscale.com/expose annotation, Connectors). Can be changed on a running cluster; takes effect
+# after the cilium agents restart (kubectl -n kube-system rollout restart ds/cilium).
+# https://tailscale.com/kb/1236/kubernetes-operator (Cilium in kube-proxy replacement mode)
+socketLB:
+  hostNamespaceOnly: true

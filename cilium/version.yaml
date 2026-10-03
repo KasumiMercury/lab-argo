@@ -1,0 +1,5 @@
+# Cilium chart pin shared by the Ansible bootstrap (this repo) and the ArgoCD Application (ArgoCD repo).
+# Bump here, then update the submodule pointer in the ArgoCD repo so both sides deploy the same chart.
+repo: https://helm.cilium.io
+chart: cilium
+version: 1.20.1
