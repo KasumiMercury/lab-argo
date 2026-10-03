@@ -1,0 +1,9 @@
+apiVersion: v2
+name: ceph-csi-rbd
+description: RBD volumes from the Proxmox Ceph cluster (pool k8s) and the StorageClass ceph-rbd
+type: application
+version: 0.1.0
+dependencies:
+  - name: ceph-csi-rbd
+    version: 3.18.1
+    repository: https://ceph.github.io/csi-charts

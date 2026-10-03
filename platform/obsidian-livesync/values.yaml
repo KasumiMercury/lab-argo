@@ -1,0 +1,10 @@
+# Published on the internet through the public Gateway (Cloudflare Tunnel, no Cloudflare Access: the LiveSync
+# clients cannot pass it). CouchDB's own authentication protects every request (require_valid_user).
+hostname: talaria.mercuryksm.net
+
+couchdb:
+  image:
+    repository: couchdb
+    tag: 3.5.2
+  # RBD volume (StorageClass ceph-rbd, reclaimPolicy Retain). Expandable in place.
+  storage: 20Gi

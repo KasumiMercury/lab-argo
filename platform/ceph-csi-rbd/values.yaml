@@ -1,0 +1,36 @@
+# Proxmox Ceph (pveceph). The k8s nodes reach the mons and OSDs on 192.168.20.0/24 through the router
+# (zone-pair SERVER-to-PRIVATE, TCP 3300/6789/6800-7300 only).
+# Ceph side, done once on a Proxmox host:
+#   pveceph pool create k8s --application rbd --add_storages 0 && ceph osd pool set k8s pg_autoscale_mode on
+#   ceph auth get-or-create client.k8s mon 'profile rbd' osd 'profile rbd pool=k8s' mgr 'profile rbd pool=k8s'
+# The key of client.k8s is delivered by templates/csi-rbd-secret.sealedsecret.yaml (task seal:ceph-csi).
+ceph-csi-rbd:
+  # MicroK8s keeps the kubelet under the snap (/var/lib/kubelet is only a symlink to it)
+  kubeletDir: /var/snap/microk8s/common/var/lib/kubelet
+  csiConfig:
+    - clusterID: 7fd500c3-d354-4119-a10f-98cbdbd15604
+      monitors:
+        - 192.168.20.10:6789
+        - 192.168.20.20:6789
+        - 192.168.20.30:6789
+  provisioner:
+    replicaCount: 2
+  storageClass:
+    create: true
+    name: ceph-rbd
+    clusterID: 7fd500c3-d354-4119-a10f-98cbdbd15604
+    pool: k8s
+    imageFeatures: layering,exclusive-lock,object-map,fast-diff
+    fstype: ext4
+    # Volumes hold application data: keep the RBD image when a PVC is deleted (remove it by hand)
+    reclaimPolicy: Retain
+    allowVolumeExpansion: true
+    # The chart leaves these empty (rendered as null); the Secret lives in this release's namespace
+    provisionerSecretNamespace: ceph-csi-rbd
+    controllerExpandSecretNamespace: ceph-csi-rbd
+    controllerPublishSecretNamespace: ceph-csi-rbd
+    nodeStageSecretNamespace: ceph-csi-rbd
+  secret:
+    # SealedSecret instead (keys userID / userKey)
+    create: false
+    name: csi-rbd-secret

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: obsidian-livesync
+description: CouchDB for Obsidian Self-hosted LiveSync, published as talaria.mercuryksm.net
+type: application
+version: 0.1.0

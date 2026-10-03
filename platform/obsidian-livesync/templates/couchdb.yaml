@@ -1,0 +1,106 @@
+# Single-node CouchDB for Self-hosted LiveSync (settings in configmap.yaml).
+# Admin credentials: templates/couchdb-admin.sealedsecret.yaml (task seal:couchdb).
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchdb
+spec:
+  selector:
+    app.kubernetes.io/name: couchdb
+  ports:
+    - name: http
+      port: 5984
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: couchdb
+spec:
+  serviceName: couchdb
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: couchdb
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: couchdb
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum | trunc 16 }}
+    spec:
+      securityContext:
+        fsGroup: 5984
+      containers:
+        - name: couchdb
+          image: "{{ .Values.couchdb.image.repository }}:{{ .Values.couchdb.image.tag }}"
+          env:
+            - name: COUCHDB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: couchdb-admin
+                  key: username
+            - name: COUCHDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: couchdb-admin
+                  key: password
+          ports:
+            - name: http
+              containerPort: 5984
+          # Every endpoint, /_up included, needs authentication (require_valid_user)
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /opt/couchdb/data
+              subPath: data
+            # The image writes the admin hash, the node uuid and the cookie secret to local.d/docker.ini on
+            # first start; keeping local.d on the volume keeps them across restarts (sessions, replication ids)
+            - name: data
+              mountPath: /opt/couchdb/etc/local.d
+              subPath: local.d
+            - name: config
+              mountPath: /opt/couchdb/etc/default.d/livesync.ini
+              subPath: livesync.ini
+      volumes:
+        - name: config
+          configMap:
+            name: couchdb
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: ceph-rbd
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.couchdb.storage }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: couchdb
+spec:
+  parentRefs:
+    - name: public
+      namespace: public-gateway
+  hostnames:
+    - {{ .Values.hostname }}
+  rules:
+    - backendRefs:
+        - name: couchdb
+          port: 5984

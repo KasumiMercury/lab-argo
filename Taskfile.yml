@@ -176,3 +176,36 @@ tasks:
           | .stringData.api-token = strenv(CF_API_TOKEN)' \
           | kubeseal --format yaml > {{.OUTPUT}}
       - echo "sealed external-dns/cloudflare-api-token -> {{.OUTPUT}}"
+
+  seal:ceph-csi:
+    desc: Seal the Ceph key of client.k8s for ceph-csi (CEPH_USER_KEY, prompted when unset; `ceph auth get-key client.k8s` on a Proxmox host)
+    interactive: true
+    vars:
+      OUTPUT: platform/ceph-csi-rbd/templates/csi-rbd-secret.sealedsecret.yaml
+    cmds:
+      - mkdir -p {{dir .OUTPUT}}
+      - |
+        [ -n "${CEPH_USER_KEY:-}" ] || { printf 'Ceph key of client.k8s: '; stty -echo; read -r CEPH_USER_KEY; stty echo; echo; }
+        export CEPH_USER_KEY
+        yq -n '.apiVersion = "v1" | .kind = "Secret"
+          | .metadata.name = "csi-rbd-secret" | .metadata.namespace = "ceph-csi-rbd"
+          | .stringData.userID = "k8s" | .stringData.userKey = strenv(CEPH_USER_KEY)' \
+          | kubeseal --format yaml > {{.OUTPUT}}
+      - echo "sealed ceph-csi-rbd/csi-rbd-secret -> {{.OUTPUT}}"
+
+  seal:couchdb:
+    desc: Seal the CouchDB admin for Obsidian LiveSync (COUCHDB_USER default admin, COUCHDB_PASSWORD prompted when unset)
+    interactive: true
+    vars:
+      OUTPUT: platform/obsidian-livesync/templates/couchdb-admin.sealedsecret.yaml
+    cmds:
+      - mkdir -p {{dir .OUTPUT}}
+      - |
+        COUCHDB_USER="${COUCHDB_USER:-admin}"
+        [ -n "${COUCHDB_PASSWORD:-}" ] || { printf 'CouchDB admin password: '; stty -echo; read -r COUCHDB_PASSWORD; stty echo; echo; }
+        export COUCHDB_USER COUCHDB_PASSWORD
+        yq -n '.apiVersion = "v1" | .kind = "Secret"
+          | .metadata.name = "couchdb-admin" | .metadata.namespace = "obsidian-livesync"
+          | .stringData.username = strenv(COUCHDB_USER) | .stringData.password = strenv(COUCHDB_PASSWORD)' \
+          | kubeseal --format yaml > {{.OUTPUT}}
+      - echo "sealed obsidian-livesync/couchdb-admin -> {{.OUTPUT}}"

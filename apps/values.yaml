@@ -72,3 +72,17 @@ components:
     finalizer: true
     syncOptions:
       - SkipDryRunOnMissingResource=true
+  ceph-csi-rbd:
+    namespace: ceph-csi-rbd
+    releaseName: ceph-csi-rbd
+    syncWave: "0"
+    finalizer: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+  obsidian-livesync:
+    namespace: obsidian-livesync
+    releaseName: obsidian-livesync
+    syncWave: "2"
+    finalizer: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true

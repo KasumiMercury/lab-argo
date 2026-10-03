@@ -20,6 +20,8 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 | kube-prometheus-stack | kube-prometheus-stack 91.9.0 | monitoring | 1 |
 | public-gateway | Gateway `public` (Cilium), LB IPAM pool, cloudflared 2026.9.3 | public-gateway | 0 |
 | external-dns | external-dns 1.23.0 (Cloudflare, mercuryksm.net) | external-dns | 1 |
+| ceph-csi-rbd | ceph-csi-rbd 3.18.1 + StorageClass `ceph-rbd` (Proxmox Ceph, pool `k8s`, Retain) | ceph-csi-rbd | 0 |
+| obsidian-livesync | CouchDB 3.5.2 for Obsidian Self-hosted LiveSync, `talaria.mercuryksm.net` | obsidian-livesync | 2 |
 
 - `argocd` and `cilium` have no resources finalizer: deleting their Application leaves Argo CD and the CNI running
 - `argocd` adopts the release installed by Ansible, so its chart version must match `argocd_chart_version` in lab-proxmox
@@ -39,6 +41,8 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
    - `task seal:cloudflared` → `platform/public-gateway/templates/cloudflared-credentials.sealedsecret.yaml`, and sets `tunnelID` in `platform/public-gateway/values.yaml`
    - `task seal:external-dns` → `platform/external-dns/templates/cloudflare-api-token.sealedsecret.yaml` (API token with Zone:Zone:Read and Zone:DNS:Edit on mercuryksm.net)
    - Commit and push. cloudflared is deployed and the Gateway gets the tunnel as its DNS target only once `tunnelID` is set
+5. Ceph RBD volumes (`ceph-rbd`): on a Proxmox host create the pool and the client once (commands in `platform/ceph-csi-rbd/values.yaml`), then `task seal:ceph-csi` (`CEPH_USER_KEY=$(ssh root@<host> ceph auth get-key client.k8s)`). The k8s nodes must reach the mons and OSDs (192.168.20.0/24, TCP 3300/6789/6800-7300)
+6. `task seal:couchdb` → `platform/obsidian-livesync/templates/couchdb-admin.sealedsecret.yaml` (CouchDB admin for LiveSync)
 
 ## Reproducing what Argo CD renders
 Tools are pinned in `mise.toml` (`mise install`).
@@ -81,6 +85,8 @@ Services are published on the internet through the Gateway `public` (namespace `
 external-dns only touches records that carry its TXT ownership entry (owner `lab-k8s`), so subdomains served by other tunnels are never changed; an HTTPRoute for a name that already exists is skipped (see the external-dns logs). It manages CNAME records only. Pick hostnames directly under `mercuryksm.net`: the free Universal SSL certificate does not cover deeper levels.
 
 ## Storage
+`ceph-rbd` provisions RBD images in the Proxmox Ceph pool `k8s` through the Ceph user `client.k8s`, which can only use that pool. Its reclaim policy is Retain: deleting a PVC keeps the image (`rbd -p k8s ls` on a Proxmox host, remove it by hand).
+
 `nfs-csi` provisions volumes on the NAS export `192.168.110.5:/nfs/k8s`, each in `<namespace>-<pvc>-<pv>`.
 The export must allow the k8s VMs (`192.168.110.0/24`) and let root create directories (`no_root_squash`).
 The Proxmox storage `strix0` (`/nfs/proxmox`) is a different export, reachable from the Proxmox hosts (`192.168.20.0/24`) only.
