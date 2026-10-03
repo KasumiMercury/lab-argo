@@ -7,11 +7,11 @@ csi-driver-nfs:
     annotations:
       storageclass.kubernetes.io/is-default-class: "true"
     parameters:
-      # Proxmox storage "strix0" (same export that Proxmox mounts at /mnt/pve/strix0)
+      # NAS export dedicated to Kubernetes (allowed for the k8s VM subnet 192.168.110.0/24).
+      # Proxmox's strix0 (/nfs/proxmox) is exported to 192.168.20.0/24 only, so the VMs cannot mount it.
       server: 192.168.110.5
-      share: /nfs/proxmox
-      # Keep Kubernetes volumes in their own directory next to the Proxmox content
-      subDir: k8s/${pvc.metadata.namespace}-${pvc.metadata.name}-${pv.metadata.name}
+      share: /nfs/k8s
+      subDir: ${pvc.metadata.namespace}-${pvc.metadata.name}-${pv.metadata.name}
     reclaimPolicy: Delete
     volumeBindingMode: Immediate
     allowVolumeExpansion: true

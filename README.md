@@ -46,8 +46,9 @@ Tools are pinned in `mise.toml` (`mise install`).
 Cilium is changed in lab-cilium (bump `version.yaml` one minor version at a time, see `cilium/README.md`). Push it there, then move the pointer here: `git submodule update --remote cilium` and commit `cilium`.
 
 ## Storage
-`nfs-csi` provisions volumes on the Proxmox storage `strix0` (`192.168.110.5:/nfs/proxmox`), each in `k8s/<namespace>-<pvc>-<pv>`.
-The export must allow the k8s VMs and let root create directories (`no_root_squash`).
+`nfs-csi` provisions volumes on the NAS export `192.168.110.5:/nfs/k8s`, each in `<namespace>-<pvc>-<pv>`.
+The export must allow the k8s VMs (`192.168.110.0/24`) and let root create directories (`no_root_squash`).
+The Proxmox storage `strix0` (`/nfs/proxmox`) is a different export, reachable from the Proxmox hosts (`192.168.20.0/24`) only.
 Prometheus keeps its TSDB there (20Gi, 15 days).
 
 ## Secrets

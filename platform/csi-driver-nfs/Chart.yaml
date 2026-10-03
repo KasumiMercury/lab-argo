@@ -1,6 +1,6 @@
 apiVersion: v2
 name: csi-driver-nfs
-description: NFS CSI driver and the nfs-csi StorageClass backed by the Proxmox storage strix0
+description: NFS CSI driver and the nfs-csi StorageClass backed by the NAS export /nfs/k8s
 type: application
 version: 0.1.0
 dependencies:
