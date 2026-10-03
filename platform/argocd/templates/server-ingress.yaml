@@ -1,0 +1,18 @@
+# Argo CD UI/API on the tailnet as https://argocd.<tailnet>.ts.net (the Tailscale proxy terminates TLS).
+# Not the chart's server.ingress: that one always renders a rules[].host, while the Tailscale examples use a
+# defaultBackend with the device name in tls.hosts.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server-tailscale
+  namespace: {{ .Release.Namespace }}
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: argocd-server
+      port:
+        name: http
+  tls:
+    - hosts:
+        - argocd

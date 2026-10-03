@@ -1,5 +1,9 @@
 argo-cd:
   configs:
+    params:
+      # TLS is terminated by the Tailscale proxy (templates/server-ingress.yaml), so argocd-server speaks plain HTTP.
+      # Keep in step with argocd_helm_values in lab-proxmox (ansible/roles/argocd/defaults/main.yml)
+      server.insecure: true
     cm:
       # Report Application health so that sync waves in the app-of-apps wait for each component.
       # https://argo-cd.readthedocs.io/en/stable/operator-manual/health/#argocd-app

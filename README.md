@@ -20,6 +20,7 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 
 - `argocd` and `cilium` have no resources finalizer: deleting their Application leaves Argo CD and the CNI running
 - `argocd` adopts the release installed by Ansible, so its chart version must match `argocd_chart_version` in lab-proxmox
+- The Argo CD UI/API is on the tailnet at `https://argocd.<tailnet>.ts.net` (`platform/argocd/templates/server-ingress.yaml`). The Tailscale proxy terminates TLS, so argocd-server runs with `server.insecure` (also set in the lab-proxmox bootstrap values). CLI: `argocd login argocd.<tailnet>.ts.net --grpc-web`
 - Argo CD reports Application health (custom health check in `platform/argocd/values.yaml`), so later waves wait for earlier ones
 
 ## Bootstrap
