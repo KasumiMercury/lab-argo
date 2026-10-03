@@ -7,7 +7,7 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 - `bootstrap/root.yaml`: root Application (app-of-apps). Applied once by hand
 - `apps/`: Helm chart that renders one Application per component (`values.yaml` lists them with namespace, release name, sync wave)
 - `platform/<component>/`: umbrella Helm chart per component. `Chart.yaml` + `Chart.lock` pin the upstream chart, `values.yaml` configures it under the dependency name, `templates/` holds extra manifests (SealedSecrets)
-- `cilium/`: Cilium chart pin (`version.yaml`) and values shared with the lab-proxmox bootstrap. Meant to become a git submodule; see `cilium/README.md`. `apps/cilium` is a symlink to it so the app-of-apps chart can read the pin
+- `cilium/`: git submodule of [lab-cilium](https://github.com/KasumiMercury/lab-cilium), the Cilium chart pin (`version.yaml`) and values shared with the lab-proxmox bootstrap; see `cilium/README.md`. `apps/cilium` is a symlink to it so the app-of-apps chart can read the pin. Clone with `git clone --recurse-submodules` (or run `git submodule update --init`)
 
 | Application | Chart | Namespace | Wave |
 |---|---|---|---|
@@ -43,7 +43,7 @@ Tools are pinned in `mise.toml` (`mise install`).
 2. `task deps:update APP=<component>` to rewrite `Chart.lock`
 3. `task render APP=<component>` to review the result, then commit
 
-Cilium is bumped in `cilium/version.yaml`, one minor version at a time (see `cilium/README.md`).
+Cilium is changed in lab-cilium (bump `version.yaml` one minor version at a time, see `cilium/README.md`). Push it there, then move the pointer here: `git submodule update --remote cilium` and commit `cilium`.
 
 ## Storage
 `nfs-csi` provisions volumes on the Proxmox storage `strix0` (`192.168.110.5:/nfs/proxmox`), each in `k8s/<namespace>-<pvc>-<pv>`.

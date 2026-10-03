@@ -1,0 +1,3 @@
+[submodule "cilium"]
+	path = cilium
+	url = https://github.com/KasumiMercury/lab-cilium.git
