@@ -1,7 +1,7 @@
 # Cloudflare Tunnel dedicated to this cluster (locally-managed: `cloudflared tunnel create <name>`).
 # Set by `task seal:cloudflared` from the credentials file. Until it is set, cloudflared is not deployed and the
 # Gateway has no external-dns target, so no DNS record is published.
-tunnelID: ""
+tunnelID: "9efda141-fb63-4300-81e2-74a684d7e6ce"
 
 # Cilium LB IPAM range for the Gateway's LoadBalancer Service. Only reached from inside the cluster (cloudflared),
 # not announced on the LAN. Must not overlap the pod CIDR (10.1.0.0/16), the Service CIDR (10.152.183.0/24) or

@@ -158,7 +158,7 @@ tasks:
           | .metadata.name = "cloudflared-credentials" | .metadata.namespace = "public-gateway"
           | .stringData."credentials.json" = strenv(CREDENTIALS_JSON)' \
           | kubeseal --format yaml > {{.OUTPUT}}
-        TUNNEL_ID="$TUNNEL_ID" yq -i '.tunnelID = strenv(TUNNEL_ID)' {{.VALUES}}
+        sed -i "s/^tunnelID: .*/tunnelID: \"$TUNNEL_ID\"/" {{.VALUES}}
         echo "sealed public-gateway/cloudflared-credentials -> {{.OUTPUT}}, tunnelID $TUNNEL_ID -> {{.VALUES}}"
 
   seal:external-dns:
