@@ -1,0 +1,5 @@
+apiVersion: v2
+name: public-gateway
+description: Gateway "public" (Cilium Gateway API) reached from the internet through a Cloudflare Tunnel (cloudflared)
+type: application
+version: 0.1.0

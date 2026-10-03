@@ -9,6 +9,11 @@ cilium:
   enabled: true
   syncWave: "-3"
 
+# Gateway API CRDs (standard channel) for Cilium's Gateway API support, version from cilium/gateway-api.yaml.
+gatewayAPI:
+  enabled: true
+  syncWave: "-4"
+
 # Platform components. Each one is an umbrella Helm chart under platform/<name> whose
 # Chart.yaml/Chart.lock pin the upstream chart (render locally with `task render APP=<name>`).
 #   namespace:   destination namespace (created when missing)
@@ -52,4 +57,18 @@ components:
     syncOptions:
       # CRDs are too large for client-side apply
       - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+  public-gateway:
+    namespace: public-gateway
+    releaseName: public-gateway
+    syncWave: "0"
+    finalizer: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+  external-dns:
+    namespace: external-dns
+    releaseName: external-dns
+    syncWave: "1"
+    finalizer: true
+    syncOptions:
       - SkipDryRunOnMissingResource=true

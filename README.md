@@ -11,12 +11,15 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 
 | Application | Chart | Namespace | Wave |
 |---|---|---|---|
+| gateway-api | Gateway API CRDs v1.6.1 (from `cilium/gateway-api.yaml`) | (cluster) | -4 |
 | cilium | cilium 1.20.1 (from `cilium/version.yaml`) | kube-system | -3 |
 | argocd | argo-cd 10.8.1 (Argo CD v3.5.2) | argocd | -2 |
 | sealed-secrets | sealed-secrets 2.20.0 | kube-system | -1 |
 | csi-driver-nfs | csi-driver-nfs 4.13.4 + StorageClass `nfs-csi` (default) | kube-system | -1 |
 | tailscale | tailscale-operator 1.102.4 | tailscale | 0 |
 | kube-prometheus-stack | kube-prometheus-stack 91.9.0 | monitoring | 1 |
+| public-gateway | Gateway `public` (Cilium), LB IPAM pool, cloudflared 2026.9.3 | public-gateway | 0 |
+| external-dns | external-dns 1.23.0 (Cloudflare, mercuryksm.net) | external-dns | 1 |
 
 - `argocd` and `cilium` have no resources finalizer: deleting their Application leaves Argo CD and the CNI running
 - `argocd` adopts the release installed by Ansible, so its chart version must match `argocd_chart_version` in lab-proxmox
@@ -31,6 +34,11 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
    - `task seal:grafana` → `platform/kube-prometheus-stack/templates/grafana-admin.sealedsecret.yaml`
 
    Until then the Tailscale operator and Grafana pods wait for their Secrets
+4. To publish services on the internet (see [Publishing a service](#publishing-a-service)):
+   - Create a tunnel dedicated to this cluster: `cloudflared tunnel login` and `cloudflared tunnel create <name>` (writes `~/.cloudflared/<tunnel-id>.json`). Do not route DNS to it by hand; external-dns does that
+   - `task seal:cloudflared` → `platform/public-gateway/templates/cloudflared-credentials.sealedsecret.yaml`, and sets `tunnelID` in `platform/public-gateway/values.yaml`
+   - `task seal:external-dns` → `platform/external-dns/templates/cloudflare-api-token.sealedsecret.yaml` (API token with Zone:Zone:Read and Zone:DNS:Edit on mercuryksm.net)
+   - Commit and push. cloudflared is deployed and the Gateway gets the tunnel as its DNS target only once `tunnelID` is set
 
 ## Reproducing what Argo CD renders
 Tools are pinned in `mise.toml` (`mise install`).
@@ -45,6 +53,32 @@ Tools are pinned in `mise.toml` (`mise install`).
 3. `task render APP=<component>` to review the result, then commit
 
 Cilium is changed in lab-cilium (bump `version.yaml` one minor version at a time, see `cilium/README.md`). Push it there, then move the pointer here: `git submodule update --remote cilium` and commit `cilium`.
+
+## Publishing a service
+Services are published on the internet through the Gateway `public` (namespace `public-gateway`): Cloudflare terminates TLS, the tunnel (cloudflared) forwards every hostname to the Gateway over HTTP, and the Gateway picks the HTTPRoute by hostname.
+
+1. If the service needs authentication, create its Cloudflare Access application for the hostname first. Nothing enforces this: a hostname without an Access application is public as soon as its record exists
+2. Add an HTTPRoute next to the service:
+   ```yaml
+   apiVersion: gateway.networking.k8s.io/v1
+   kind: HTTPRoute
+   metadata:
+     name: foo
+     namespace: foo
+   spec:
+     parentRefs:
+       - name: public
+         namespace: public-gateway
+     hostnames:
+       - foo.mercuryksm.net
+     rules:
+       - backendRefs:
+           - name: foo
+             port: 80
+   ```
+3. external-dns creates the proxied CNAME `foo.mercuryksm.net` → `<tunnel-id>.cfargotunnel.com` plus its TXT ownership record, and deletes them with the HTTPRoute
+
+external-dns only touches records that carry its TXT ownership entry (owner `lab-k8s`), so subdomains served by other tunnels are never changed; an HTTPRoute for a name that already exists is skipped (see the external-dns logs). It manages CNAME records only. Pick hostnames directly under `mercuryksm.net`: the free Universal SSL certificate does not cover deeper levels.
 
 ## Storage
 `nfs-csi` provisions volumes on the NAS export `192.168.110.5:/nfs/k8s`, each in `<namespace>-<pvc>-<pv>`.

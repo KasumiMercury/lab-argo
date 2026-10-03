@@ -1,0 +1,26 @@
+external-dns:
+  provider:
+    name: cloudflare
+  env:
+    # Cloudflare API token with Zone:Zone:Read and Zone:DNS:Edit on mercuryksm.net.
+    # Delivered by templates/cloudflare-api-token.sealedsecret.yaml (task seal:external-dns).
+    - name: CF_API_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: cloudflare-api-token
+          key: api-token
+  # Hostnames of HTTPRoutes, pointed at the target annotation of their Gateway (the tunnel, public-gateway)
+  sources:
+    - gateway-httproute
+  domainFilters:
+    - mercuryksm.net
+  # Records are created and deleted with their HTTPRoutes. Only records carrying this owner's TXT registry
+  # entry are ever changed, so the subdomains served by the existing tunnels are left alone.
+  policy: sync
+  registry: txt
+  txtOwnerId: lab-k8s
+  # CNAMEs only: a Gateway without the tunnel target can never publish its private LB IP as an A record
+  managedRecordTypes:
+    - CNAME
+  extraArgs:
+    - --cloudflare-proxied

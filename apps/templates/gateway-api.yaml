@@ -1,0 +1,26 @@
+{{- if .Values.gatewayAPI.enabled }}
+{{- $pin := .Files.Get "cilium/gateway-api.yaml" | fromYaml }}
+{{- if not $pin.version }}
+{{- fail "cilium/gateway-api.yaml not found: is the cilium submodule up to date?" }}
+{{- end }}
+# Gateway API CRDs for Cilium's Gateway API support. The version is pinned in the shared cilium/ directory and
+# installed by the Ansible bootstrap before Cilium; synced here in an earlier wave than Cilium.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway-api
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.gatewayAPI.syncWave | quote }}
+  # No resources finalizer: deleting the Application must not delete the CRDs (and every route with them)
+spec:
+  project: default
+  source:
+    repoURL: {{ $pin.repo }}.git
+    targetRevision: {{ $pin.version }}
+    path: config/crd/standard
+  destination:
+    server: {{ .Values.destinationServer }}
+  syncPolicy:
+    {{- include "apps.syncPolicy" (dict "syncOptions" (list "ServerSideApply=true")) | nindent 4 }}
+{{- end }}

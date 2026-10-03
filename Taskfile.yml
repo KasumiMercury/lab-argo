@@ -138,3 +138,41 @@ tasks:
           | .stringData.admin-user = strenv(GRAFANA_ADMIN_USER) | .stringData.admin-password = strenv(GRAFANA_ADMIN_PASSWORD)' \
           | kubeseal --format yaml > {{.OUTPUT}}
       - echo "sealed monitoring/grafana-admin -> {{.OUTPUT}}"
+
+  seal:cloudflared:
+    desc: Seal the Cloudflare Tunnel credentials (CLOUDFLARED_CREDENTIALS = file from `cloudflared tunnel create`, prompted when unset) and set tunnelID
+    interactive: true
+    vars:
+      OUTPUT: platform/public-gateway/templates/cloudflared-credentials.sealedsecret.yaml
+      VALUES: platform/public-gateway/values.yaml
+    cmds:
+      - mkdir -p {{dir .OUTPUT}}
+      - |
+        [ -n "${CLOUDFLARED_CREDENTIALS:-}" ] || { printf 'Tunnel credentials file (~/.cloudflared/<tunnel-id>.json): '; read -r CLOUDFLARED_CREDENTIALS; }
+        CLOUDFLARED_CREDENTIALS="${CLOUDFLARED_CREDENTIALS/#\~/$HOME}"
+        TUNNEL_ID=$(yq -p json -o yaml '.TunnelID' "$CLOUDFLARED_CREDENTIALS")
+        [ -n "$TUNNEL_ID" ] && [ "$TUNNEL_ID" != null ] || { echo "no TunnelID in $CLOUDFLARED_CREDENTIALS" >&2; exit 1; }
+        CREDENTIALS_JSON=$(cat "$CLOUDFLARED_CREDENTIALS")
+        export CREDENTIALS_JSON
+        yq -n '.apiVersion = "v1" | .kind = "Secret"
+          | .metadata.name = "cloudflared-credentials" | .metadata.namespace = "public-gateway"
+          | .stringData."credentials.json" = strenv(CREDENTIALS_JSON)' \
+          | kubeseal --format yaml > {{.OUTPUT}}
+        TUNNEL_ID="$TUNNEL_ID" yq -i '.tunnelID = strenv(TUNNEL_ID)' {{.VALUES}}
+        echo "sealed public-gateway/cloudflared-credentials -> {{.OUTPUT}}, tunnelID $TUNNEL_ID -> {{.VALUES}}"
+
+  seal:external-dns:
+    desc: Seal the Cloudflare API token for external-dns (CF_API_TOKEN, prompted when unset; Zone:Zone:Read + Zone:DNS:Edit on mercuryksm.net)
+    interactive: true
+    vars:
+      OUTPUT: platform/external-dns/templates/cloudflare-api-token.sealedsecret.yaml
+    cmds:
+      - mkdir -p {{dir .OUTPUT}}
+      - |
+        [ -n "${CF_API_TOKEN:-}" ] || { printf 'Cloudflare API token: '; stty -echo; read -r CF_API_TOKEN; stty echo; echo; }
+        export CF_API_TOKEN
+        yq -n '.apiVersion = "v1" | .kind = "Secret"
+          | .metadata.name = "cloudflare-api-token" | .metadata.namespace = "external-dns"
+          | .stringData.api-token = strenv(CF_API_TOKEN)' \
+          | kubeseal --format yaml > {{.OUTPUT}}
+      - echo "sealed external-dns/cloudflare-api-token -> {{.OUTPUT}}"
