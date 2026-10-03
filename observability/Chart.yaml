@@ -1,6 +1,0 @@
-apiVersion: v2
-name: observability
-description: Prometheus stack and external services for observability
-type: application
-version: 0.1.0
-appVersion: "v71.2.0"

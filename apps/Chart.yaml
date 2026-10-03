@@ -1,5 +1,0 @@
-apiVersion: v2
-name: apps
-description: Argo CD app-of-apps pattern for infrastructure components
-type: application
-version: 0.1.0
