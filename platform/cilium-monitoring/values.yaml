@@ -1,3 +1,28 @@
 # Value of the cluster label added to every Cilium series. The Hubble per-namespace dashboards filter on it
 # (label_values(cilium_version, cluster)).
 cluster: lab
+
+# HTTP visibility: ingress traffic to these ports is sent through Cilium's Envoy so Hubble records L7 flows and
+# the httpV2 metrics (hubble_http_*). The policies set enableDefaultDeny to false and allow every request, so they
+# never block anything. Only plain HTTP is visible (not TLS), and each request takes an extra Envoy hop
+# (Envoy's stream idle timeout is 300s). Keep high-volume traffic such as metrics scrapes out of this list.
+#   name:        policy name (also the workload in the target namespace)
+#   namespace:   namespace of the pods
+#   matchLabels: pod labels
+#   ports:       container ports that speak HTTP
+l7Visibility:
+  - name: couchdb
+    namespace: obsidian-livesync
+    matchLabels:
+      app.kubernetes.io/name: couchdb
+    ports: [5984]
+  - name: grafana
+    namespace: monitoring
+    matchLabels:
+      app.kubernetes.io/name: grafana
+    ports: [3000]
+  - name: argocd-server
+    namespace: argocd
+    matchLabels:
+      app.kubernetes.io/name: argocd-server
+    ports: [8080]

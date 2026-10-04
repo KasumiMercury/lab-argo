@@ -1,0 +1,30 @@
+# Visibility-only CiliumNetworkPolicies for the HTTP workloads listed in values.yaml (l7Visibility).
+# enableDefaultDeny: false keeps the selected pods' other traffic as it is (no policy enforcement);
+# the empty HTTP rule allows every request and only makes Envoy parse it for Hubble.
+{{- range .Values.l7Visibility }}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: l7-visibility-{{ .name }}
+  namespace: {{ .namespace }}
+spec:
+  enableDefaultDeny:
+    ingress: false
+    egress: false
+  endpointSelector:
+    matchLabels:
+      {{- toYaml .matchLabels | nindent 6 }}
+  ingress:
+    - fromEntities:
+        - all
+      toPorts:
+        - ports:
+            {{- range .ports }}
+            - port: {{ . | quote }}
+              protocol: TCP
+            {{- end }}
+          rules:
+            http:
+              - {}
+{{- end }}

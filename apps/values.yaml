@@ -80,7 +80,7 @@ components:
     syncOptions:
       - SkipDryRunOnMissingResource=true
   cilium-monitoring:
-    # PodMonitors for the Cilium Application (the pods live in kube-system)
+    # PodMonitors for the Cilium Application (the pods live in kube-system) and L7 visibility policies
     namespace: kube-system
     releaseName: cilium-monitoring
     syncWave: "2"
