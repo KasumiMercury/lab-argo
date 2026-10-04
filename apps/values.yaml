@@ -79,6 +79,13 @@ components:
     finalizer: true
     syncOptions:
       - SkipDryRunOnMissingResource=true
+  alloy-journal:
+    namespace: logging
+    releaseName: alloy-journal
+    syncWave: "2"
+    finalizer: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
   public-gateway:
     namespace: public-gateway
     releaseName: public-gateway

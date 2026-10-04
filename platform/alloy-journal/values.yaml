@@ -1,0 +1,87 @@
+# The MicroK8s control plane and runtime are snap services, not Pods: kubelite (apiserver, scheduler,
+# controller-manager, kubelet, proxy), containerd and k8s-dqlite log to the journal of each node only.
+# One Alloy per node reads them from /var/log/journal and pushes them to Loki as
+# namespace="microk8s", container=<service> (kubelite, containerd, ...), node=<hostname>, so they show up in
+# the logs dashboard next to the Pods. Levels come from Loki's detected_level (klog's E/W prefix,
+# logfmt level=); the journal priority is info for everything these services write.
+alloy:
+  controller:
+    type: daemonset
+    volumes:
+      extra:
+        # Read positions survive restarts of the Pod (an emptyDir would replay max_age of logs)
+        - name: positions
+          hostPath:
+            path: /var/lib/alloy-journal
+            type: DirectoryOrCreate
+
+  alloy:
+    # Usage statistics to grafana.com
+    enableReporting: false
+    storagePath: /var/lib/alloy
+    mounts:
+      # /var/log (read-only) with the persistent journal in /var/log/journal/<machine-id>
+      varlog: true
+      extra:
+        - name: positions
+          mountPath: /var/lib/alloy
+    # The journal files belong to root:systemd-journal (0640)
+    securityContext:
+      runAsUser: 0
+      runAsGroup: 0
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+    configMap:
+      content: |
+        logging {
+          level  = "info"
+          format = "logfmt"
+        }
+
+        loki.relabel "journal" {
+          forward_to = []
+
+          // Only the MicroK8s services (snap.microk8s.daemon-<name>.service)
+          rule {
+            source_labels = ["__journal__systemd_unit"]
+            regex         = "snap\\.microk8s\\.daemon-.+\\.service"
+            action        = "keep"
+          }
+          rule {
+            source_labels = ["__journal__systemd_unit"]
+            regex         = "snap\\.microk8s\\.daemon-(.+)\\.service"
+            target_label  = "container"
+          }
+          rule {
+            source_labels = ["__journal__hostname"]
+            target_label  = "node"
+          }
+          rule {
+            source_labels = ["container"]
+            replacement   = "microk8s/$1"
+            target_label  = "job"
+          }
+        }
+
+        loki.source.journal "microk8s" {
+          path          = "/var/log/journal"
+          // First start only; afterwards Alloy resumes from its saved position
+          max_age       = "24h"
+          relabel_rules = loki.relabel.journal.rules
+          labels        = {namespace = "microk8s"}
+          forward_to    = [loki.write.default.receiver]
+        }
+
+        loki.write "default" {
+          endpoint {
+            url = "http://loki.logging.svc:3100/loki/api/v1/push"
+          }
+        }
+
+  # Alloy's own metrics (loki_write_* for dropped or failed pushes)
+  serviceMonitor:
+    enabled: true

@@ -1,0 +1,9 @@
+apiVersion: v2
+name: alloy-journal
+description: Alloy on every node shipping the journald logs of the MicroK8s services (kubelite, containerd, k8s-dqlite, ...) to Loki
+type: application
+version: 0.1.0
+dependencies:
+  - name: alloy
+    version: 1.13.0
+    repository: https://grafana.github.io/helm-charts
