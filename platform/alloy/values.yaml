@@ -73,6 +73,51 @@ alloy:
 
         loki.source.kubernetes "pods" {
           targets    = discovery.relabel.pods.output
+          forward_to = [loki.process.drop_noise.receiver]
+        }
+
+        // Recurring error/warn lines that never need action; they would keep the dashboard's
+        // error and warning counts above zero. Each rule is limited to one container and one message.
+        loki.process "drop_noise" {
+          // Argo CD renders a new revision once without charts/ (gitignored), then builds the
+          // dependencies itself and renders again
+          stage.match {
+            selector            = "{namespace=\"argocd\", container=\"repo-server\"} |= \"but missing in charts/ directory\""
+            action              = "drop"
+            drop_counter_reason = "argocd_missing_chart_deps"
+          }
+          // Queries cancelled by the browser (dashboard refresh, variable change) are logged on
+          // every hop: Grafana's datasource plugins, Loki's querier and the tailscale proxy
+          stage.match {
+            selector            = "{namespace=\"monitoring\", container=\"grafana\"} |= \"context canceled\""
+            action              = "drop"
+            drop_counter_reason = "query_cancelled"
+          }
+          stage.match {
+            selector            = "{namespace=\"logging\", container=\"loki\"} |~ \"context canceled|error notifying scheduler about finished query|error health checking\""
+            action              = "drop"
+            drop_counter_reason = "query_cancelled"
+          }
+          stage.match {
+            selector            = "{namespace=\"tailscale\"} |= \"http: proxy error: context canceled\""
+            action              = "drop"
+            drop_counter_reason = "query_cancelled"
+          }
+          // Tailnet clients going away during the TLS handshake. CreateEndpoint (TCP handshake)
+          // timeouts are kept: they come from clients reaching the proxies only through DERP.
+          stage.match {
+            selector            = "{namespace=\"tailscale\"} |= \"http: TLS handshake error\""
+            action              = "drop"
+            drop_counter_reason = "client_connection_reset"
+          }
+          // Routine session token rotation, HEAD requests for plugin modules, and the per-request
+          // summary of a failed datasource query (its cause is logged on a separate line with error=)
+          stage.match {
+            selector            = "{namespace=\"monitoring\", container=\"grafana\"} |~ \"token needs to be rotated|Failed to write gzipped response|Plugin Request Completed\""
+            action              = "drop"
+            drop_counter_reason = "grafana_routine"
+          }
+
           forward_to = [loki.write.default.receiver]
         }
 
