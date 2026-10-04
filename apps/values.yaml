@@ -36,6 +36,12 @@ components:
     releaseName: sealed-secrets
     syncWave: "-1"
     finalizer: true
+  snapshot-controller:
+    # VolumeSnapshot CRDs before the CSI drivers that create VolumeSnapshotClasses
+    namespace: kube-system
+    releaseName: snapshot-controller
+    syncWave: "-2"
+    finalizer: true
   csi-driver-nfs:
     namespace: kube-system
     releaseName: csi-driver-nfs

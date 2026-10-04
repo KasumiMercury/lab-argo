@@ -1,0 +1,10 @@
+apiVersion: v2
+name: snapshot-controller
+description: VolumeSnapshot CRDs and the snapshot-controller for the csi-snapshotter sidecars of ceph-csi-rbd and csi-driver-nfs
+type: application
+version: 0.1.0
+dependencies:
+  # external-snapshotter v8.6.0, the same version as the csi-snapshotter sidecars of both CSI drivers
+  - name: snapshot-controller
+    version: 5.3.0
+    repository: https://piraeus.io/helm-charts/

@@ -15,3 +15,10 @@ csi-driver-nfs:
     reclaimPolicy: Delete
     volumeBindingMode: Immediate
     allowVolumeExpansion: true
+  # VolumeSnapshot CRDs and controller come from the snapshot-controller component
+  volumeSnapshotClass:
+    create: true
+    name: nfs-csi
+    annotations:
+      snapshot.storage.kubernetes.io/is-default-class: "true"
+    deletionPolicy: Delete

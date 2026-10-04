@@ -1,0 +1,13 @@
+# Cluster-wide VolumeSnapshot support: the CRDs and one snapshot-controller. Each CSI driver's csi-snapshotter
+# sidecar does the actual snapshotting; the VolumeSnapshotClasses live with the drivers (ceph-csi-rbd,
+# csi-driver-nfs). Without these CRDs the sidecars log a "Failed to watch" error every few seconds.
+snapshot-controller:
+  # Removing the Application must not delete the CRDs and with them every VolumeSnapshot
+  keepCRDs: true
+  controller:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi

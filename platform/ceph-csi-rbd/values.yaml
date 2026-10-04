@@ -34,3 +34,13 @@ ceph-csi-rbd:
     # SealedSecret instead (keys userID / userKey)
     create: false
     name: csi-rbd-secret
+  # VolumeSnapshot CRDs and controller come from the snapshot-controller component
+  volumeSnapshotClass:
+    create: true
+    name: ceph-rbd
+    annotations:
+      snapshot.storage.kubernetes.io/is-default-class: "true"
+    clusterID: 7fd500c3-d354-4119-a10f-98cbdbd15604
+    # Same Secret as the provisioner (release namespace)
+    snapshotterSecret: csi-rbd-secret
+    deletionPolicy: Delete
