@@ -23,31 +23,35 @@
   "templating": {
     "list": [
       {
-        "name": "datasource",
-        "label": "Data source",
-        "type": "datasource",
-        "query": "loki",
-        "current": {},
-        "hide": 0
-      },
-      {
         "name": "namespace",
         "label": "Namespace",
         "type": "query",
         "datasource": {
           "type": "loki",
-          "uid": "${datasource}"
+          "uid": "loki"
         },
-        "query": "label_values(namespace)",
+        "query": {
+          "refId": "LokiVariableQueryEditor-VariableQuery",
+          "type": 1,
+          "label": "namespace",
+          "stream": ""
+        },
         "refresh": 2,
         "multi": true,
         "includeAll": true,
         "allValue": ".+",
         "current": {
-          "text": "All",
-          "value": "$__all"
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
-        "sort": 1
+        "sort": 1,
+        "definition": "label_values(namespace)",
+        "options": []
       },
       {
         "name": "container",
@@ -55,18 +59,30 @@
         "type": "query",
         "datasource": {
           "type": "loki",
-          "uid": "${datasource}"
+          "uid": "loki"
         },
-        "query": "label_values({namespace=~\"$namespace\"}, container)",
+        "query": {
+          "refId": "LokiVariableQueryEditor-VariableQuery",
+          "type": 1,
+          "label": "container",
+          "stream": "{namespace=~\"$namespace\"}"
+        },
         "refresh": 2,
         "multi": true,
         "includeAll": true,
         "allValue": ".*",
         "current": {
-          "text": "All",
-          "value": "$__all"
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
-        "sort": 1
+        "sort": 1,
+        "definition": "label_values({namespace=~\"$namespace\"}, container)",
+        "options": []
       },
       {
         "name": "level",
@@ -77,9 +93,61 @@
         "allValue": ".+",
         "query": "critical,fatal,error,warn,info,debug,trace,unknown",
         "current": {
-          "text": "All",
-          "value": "$__all"
-        }
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          },
+          {
+            "selected": false,
+            "text": "critical",
+            "value": "critical"
+          },
+          {
+            "selected": false,
+            "text": "fatal",
+            "value": "fatal"
+          },
+          {
+            "selected": false,
+            "text": "error",
+            "value": "error"
+          },
+          {
+            "selected": false,
+            "text": "warn",
+            "value": "warn"
+          },
+          {
+            "selected": false,
+            "text": "info",
+            "value": "info"
+          },
+          {
+            "selected": false,
+            "text": "debug",
+            "value": "debug"
+          },
+          {
+            "selected": false,
+            "text": "trace",
+            "value": "trace"
+          },
+          {
+            "selected": false,
+            "text": "unknown",
+            "value": "unknown"
+          }
+        ]
       },
       {
         "name": "search",
@@ -89,7 +157,14 @@
         "current": {
           "text": "",
           "value": ""
-        }
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ]
       }
     ]
   },
@@ -98,7 +173,7 @@
       "id": 1,
       "datasource": {
         "type": "loki",
-        "uid": "${datasource}"
+        "uid": "loki"
       },
       "type": "stat",
       "title": "Errors",
@@ -114,7 +189,7 @@
           "refId": "A",
           "datasource": {
             "type": "loki",
-            "uid": "${datasource}"
+            "uid": "loki"
           },
           "expr": "sum(count_over_time({namespace=~\"$namespace\", container=~\"$container\"} | detected_level=~\"error|critical|fatal\" [$__range]))",
           "queryType": "instant",
@@ -156,7 +231,7 @@
       "id": 2,
       "datasource": {
         "type": "loki",
-        "uid": "${datasource}"
+        "uid": "loki"
       },
       "type": "stat",
       "title": "Warnings",
@@ -172,7 +247,7 @@
           "refId": "A",
           "datasource": {
             "type": "loki",
-            "uid": "${datasource}"
+            "uid": "loki"
           },
           "expr": "sum(count_over_time({namespace=~\"$namespace\", container=~\"$container\"} | detected_level=\"warn\" [$__range]))",
           "queryType": "instant",
@@ -214,7 +289,7 @@
       "id": 3,
       "datasource": {
         "type": "loki",
-        "uid": "${datasource}"
+        "uid": "loki"
       },
       "type": "stat",
       "title": "Errors (last 5m)",
@@ -230,7 +305,7 @@
           "refId": "A",
           "datasource": {
             "type": "loki",
-            "uid": "${datasource}"
+            "uid": "loki"
           },
           "expr": "sum(count_over_time({namespace=~\"$namespace\", container=~\"$container\"} | detected_level=~\"error|critical|fatal\" [5m]))",
           "queryType": "instant",
@@ -272,7 +347,7 @@
       "id": 4,
       "datasource": {
         "type": "loki",
-        "uid": "${datasource}"
+        "uid": "loki"
       },
       "type": "stat",
       "title": "Warning events",
@@ -288,7 +363,7 @@
           "refId": "A",
           "datasource": {
             "type": "loki",
-            "uid": "${datasource}"
+            "uid": "loki"
           },
           "expr": "sum(count_over_time({job=\"kubernetes-events\", namespace=~\"$namespace\"} |= \"type=Warning\" [$__range]))",
           "queryType": "instant",
@@ -330,7 +405,7 @@
       "id": 5,
       "datasource": {
         "type": "loki",
-        "uid": "${datasource}"
+        "uid": "loki"
       },
       "type": "timeseries",
       "title": "Log volume by level",
@@ -345,7 +420,7 @@
           "refId": "A",
           "datasource": {
             "type": "loki",
-            "uid": "${datasource}"
+            "uid": "loki"
           },
           "legendFormat": "{{detected_level}}",
           "expr": "sum by (detected_level) (count_over_time({namespace=~\"$namespace\", container=~\"$container\"} |~ \"(?i)$search\" [$__auto]))"
@@ -501,7 +576,7 @@
       "id": 6,
       "datasource": {
         "type": "loki",
-        "uid": "${datasource}"
+        "uid": "loki"
       },
       "type": "timeseries",
       "title": "Errors and warnings by namespace",
@@ -516,7 +591,7 @@
           "refId": "A",
           "datasource": {
             "type": "loki",
-            "uid": "${datasource}"
+            "uid": "loki"
           },
           "legendFormat": "{{namespace}}",
           "expr": "sum by (namespace) (count_over_time({namespace=~\"$namespace\", container=~\"$container\"} | detected_level=~\"error|critical|fatal|warn\" |~ \"(?i)$search\" [$__auto]))"
@@ -551,7 +626,7 @@
       "id": 7,
       "datasource": {
         "type": "loki",
-        "uid": "${datasource}"
+        "uid": "loki"
       },
       "type": "bargauge",
       "title": "Top sources of errors and warnings",
@@ -567,7 +642,7 @@
           "refId": "A",
           "datasource": {
             "type": "loki",
-            "uid": "${datasource}"
+            "uid": "loki"
           },
           "queryType": "instant",
           "instant": true,
@@ -604,7 +679,7 @@
       "id": 8,
       "datasource": {
         "type": "loki",
-        "uid": "${datasource}"
+        "uid": "loki"
       },
       "type": "logs",
       "title": "Errors and warnings",
@@ -619,7 +694,7 @@
           "refId": "A",
           "datasource": {
             "type": "loki",
-            "uid": "${datasource}"
+            "uid": "loki"
           },
           "maxLines": 500,
           "expr": "{namespace=~\"$namespace\", container=~\"$container\"} | detected_level=~\"error|critical|fatal|warn\" |~ \"(?i)$search\""
@@ -638,7 +713,7 @@
       "id": 9,
       "datasource": {
         "type": "loki",
-        "uid": "${datasource}"
+        "uid": "loki"
       },
       "type": "logs",
       "title": "Kubernetes warning events",
@@ -653,7 +728,7 @@
           "refId": "A",
           "datasource": {
             "type": "loki",
-            "uid": "${datasource}"
+            "uid": "loki"
           },
           "maxLines": 300,
           "expr": "{job=\"kubernetes-events\", namespace=~\"$namespace\"} |= \"type=Warning\" | logfmt | line_format \"{{.kind}}/{{.name}}  {{.reason}}{{if .count}} (x{{.count}}){{end}}  {{.msg}}\""
@@ -683,7 +758,7 @@
           "id": 10,
           "datasource": {
             "type": "loki",
-            "uid": "${datasource}"
+            "uid": "loki"
           },
           "type": "logs",
           "title": "Logs ($level)",
@@ -698,7 +773,7 @@
               "refId": "A",
               "datasource": {
                 "type": "loki",
-                "uid": "${datasource}"
+                "uid": "loki"
               },
               "maxLines": 1000,
               "expr": "{namespace=~\"$namespace\", container=~\"$container\"} | detected_level=~\"$level\" |~ \"(?i)$search\""
