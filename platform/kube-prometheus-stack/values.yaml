@@ -30,27 +30,32 @@ kube-prometheus-stack:
               requests:
                 storage: 20Gi
 
-  # Alerts labelled notify="k8s-alert" (Loki ruler: platform/loki/rules/k8s-alerts.yaml) go to Slack
-  # #k8s-alert through the Slack App shared with pve-grafana and Zabbix (lab-proxmox, scope chat:write;
-  # invite the bot to the channel). Its bot token is the Secret alertmanager-slack (task seal:slack),
-  # mounted at /etc/alertmanager/secrets/alertmanager-slack/. Everything else still goes nowhere.
+  # Slack #k8s-alert gets the alerts of the Loki ruler (notify="k8s-alert", platform/loki/rules/k8s-alerts.yaml)
+  # and every warning or critical alert of Prometheus: the stack's default rules and the PrometheusRules of
+  # the Applications (CouchDB, ...). Info alerts (CPUThrottlingHigh, KubeQuotaAlmostFull, ...) and the
+  # always-firing Watchdog/InfoInhibitor go nowhere. Posted through the Slack App shared with pve-grafana and
+  # Zabbix (lab-proxmox, scope chat:write; invite the bot to the channel); its bot token is the Secret
+  # alertmanager-slack (task seal:slack), mounted at /etc/alertmanager/secrets/alertmanager-slack/.
   alertmanager:
     alertmanagerSpec:
       secrets:
         - alertmanager-slack
     config:
       route:
-        group_by: [alertname, node, container]
+        group_by: [alertname, namespace, node, container]
         group_wait: 30s
         group_interval: 5m
         repeat_interval: 4h
         receiver: "null"
         routes:
           - matchers:
-              - alertname = "Watchdog"
+              - alertname =~ "Watchdog|InfoInhibitor"
             receiver: "null"
           - matchers:
               - notify = "k8s-alert"
+            receiver: slack-k8s-alert
+          - matchers:
+              - severity =~ "warning|critical"
             receiver: slack-k8s-alert
       receivers:
         - name: "null"
@@ -69,10 +74,11 @@ kube-prometheus-stack:
               update_message: true
               color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
               title: '[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}'
-              title_link: '{{ (index .Alerts 0).Annotations.dashboard }}'
+              # Loki rules link the logs dashboard, Prometheus rules their runbook
+              title_link: '{{ with (index .Alerts 0).Annotations.dashboard }}{{ . }}{{ else }}{{ (index .Alerts 0).Annotations.runbook_url }}{{ end }}'
               text: |-
-                {{ range .Alerts }}*{{ .Annotations.summary }}*
-                {{ .Annotations.description }}
+                {{ range .Alerts }}*{{ with .Annotations.summary }}{{ . }}{{ else }}{{ .Labels.alertname }}{{ end }}*{{ with .Labels.namespace }} (`{{ . }}`){{ end }}
+                {{ with .Annotations.description }}{{ . }}{{ else }}{{ .Annotations.message }}{{ end }}
                 {{ end }}
 
   grafana:

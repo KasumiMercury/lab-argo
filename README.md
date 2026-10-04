@@ -18,7 +18,7 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 | snapshot-controller | snapshot-controller 5.3.0 (piraeus; external-snapshotter v8.6.0 CRDs and controller) | kube-system | -2 |
 | csi-driver-nfs | csi-driver-nfs 4.13.4 + StorageClass `nfs-csi` (default), VolumeSnapshotClass `nfs-csi` | kube-system | -1 |
 | tailscale | tailscale-operator 1.102.4 | tailscale | 0 |
-| kube-prometheus-stack | kube-prometheus-stack 91.9.0; Alertmanager sends `notify="k8s-alert"` alerts to Slack #k8s-alert | monitoring | 1 |
+| kube-prometheus-stack | kube-prometheus-stack 91.9.0; Alertmanager sends the Loki ruler alerts and every warning/critical Prometheus alert to Slack #k8s-alert | monitoring | 1 |
 | loki | loki 18.13.7 (Loki 3.7.8, grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki`, dashboard `Logs overview`, ruler alerts on error spikes of the Kubernetes components and Cilium (`rules/k8s-alerts.yaml`) | logging | 1 |
 | alloy | alloy 1.13.0 (Alloy v1.20.0; one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`; drops recurring lines that never need action) | logging | 2 |
 | alloy-journal | alloy 1.13.0 (DaemonSet reading the journal of the MicroK8s services, `namespace="microk8s"`, `container=<service>`) | logging | 2 |
