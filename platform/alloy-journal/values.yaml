@@ -2,8 +2,8 @@
 # controller-manager, kubelet, proxy), containerd and k8s-dqlite log to the journal of each node only.
 # One Alloy per node reads them from /var/log/journal and pushes them to Loki as
 # namespace="microk8s", container=<service> (kubelite, containerd, ...), node=<hostname>, so they show up in
-# the logs dashboard next to the Pods. Levels come from Loki's detected_level (klog's E/W prefix,
-# logfmt level=); the journal priority is info for everything these services write.
+# the logs dashboard next to the Pods. Levels come from the klog prefix (kubelite) or Loki's own detection
+# (logfmt level= of containerd and k8s-dqlite); the journal priority is info for everything they write.
 alloy:
   controller:
     type: daemonset
@@ -73,7 +73,38 @@ alloy:
           max_age       = "24h"
           relabel_rules = loki.relabel.journal.rules
           labels        = {namespace = "microk8s"}
-          forward_to    = [loki.write.default.receiver]
+          forward_to    = [loki.process.klog_level.receiver]
+        }
+
+        // klog lines (I/W/E/F + MMDD prefix) get their level from the prefix. Loki's own level detection
+        // ignores the prefix and calls a warning "error" whenever the message contains that word.
+        loki.process "klog_level" {
+          stage.match {
+            selector = "{namespace=\"microk8s\"} |~ \"^I[0-9]{4} \""
+            stage.static_labels {
+              values = {level = "info"}
+            }
+          }
+          stage.match {
+            selector = "{namespace=\"microk8s\"} |~ \"^W[0-9]{4} \""
+            stage.static_labels {
+              values = {level = "warn"}
+            }
+          }
+          stage.match {
+            selector = "{namespace=\"microk8s\"} |~ \"^E[0-9]{4} \""
+            stage.static_labels {
+              values = {level = "error"}
+            }
+          }
+          stage.match {
+            selector = "{namespace=\"microk8s\"} |~ \"^F[0-9]{4} \""
+            stage.static_labels {
+              values = {level = "fatal"}
+            }
+          }
+
+          forward_to = [loki.write.default.receiver]
         }
 
         loki.write "default" {
