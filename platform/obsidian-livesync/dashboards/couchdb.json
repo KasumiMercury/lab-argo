@@ -10,7 +10,7 @@
   "version": 1,
   "refresh": "1m",
   "time": {
-    "from": "now-24h",
+    "from": "now-6h",
     "to": "now"
   },
   "templating": {
@@ -348,7 +348,7 @@
             "uid": "${datasource}"
           },
           "refId": "A",
-          "expr": "sum by (method) (rate(couchdb_httpd_request_methods{namespace=\"obsidian-livesync\"}[$__rate_interval])) > 0",
+          "expr": "sum by (method) (rate(couchdb_httpd_request_methods{namespace=\"obsidian-livesync\"}[$__rate_interval]))\n  and on (method) sum by (method) (couchdb_httpd_request_methods{namespace=\"obsidian-livesync\"}) > 0",
           "legendFormat": "{{method}}"
         }
       ],
@@ -391,7 +391,7 @@
             "uid": "${datasource}"
           },
           "refId": "A",
-          "expr": "sum by (code) (rate(couchdb_httpd_status_codes{namespace=\"obsidian-livesync\"}[$__rate_interval])) > 0",
+          "expr": "sum by (code) (rate(couchdb_httpd_status_codes{namespace=\"obsidian-livesync\"}[$__rate_interval]))\n  and on (code) sum by (code) (couchdb_httpd_status_codes{namespace=\"obsidian-livesync\"}) > 0",
           "legendFormat": "{{code}}"
         }
       ],
