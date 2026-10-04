@@ -15,14 +15,16 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 | cilium | cilium 1.20.1 (from `cilium/version.yaml`) | kube-system | -3 |
 | argocd | argo-cd 10.8.1 (Argo CD v3.5.2) | argocd | -2 |
 | sealed-secrets | sealed-secrets 2.20.0 | kube-system | -1 |
-| csi-driver-nfs | csi-driver-nfs 4.13.4 + StorageClass `nfs-csi` (default) | kube-system | -1 |
+| snapshot-controller | snapshot-controller 5.3.0 (piraeus; external-snapshotter v8.6.0 CRDs and controller) | kube-system | -2 |
+| csi-driver-nfs | csi-driver-nfs 4.13.4 + StorageClass `nfs-csi` (default), VolumeSnapshotClass `nfs-csi` | kube-system | -1 |
 | tailscale | tailscale-operator 1.102.4 | tailscale | 0 |
-| kube-prometheus-stack | kube-prometheus-stack 91.9.0 | monitoring | 1 |
-| loki | loki 18.13.7 (Loki 3.7.8, grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki` | logging | 1 |
-| alloy | alloy 1.13.0 (Alloy v1.20.0; one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`) | logging | 2 |
+| kube-prometheus-stack | kube-prometheus-stack 91.9.0; Alertmanager sends `notify="k8s-alert"` alerts to Slack #k8s-alert | monitoring | 1 |
+| loki | loki 18.13.7 (Loki 3.7.8, grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki`, dashboard `Logs overview`, ruler alerts on error spikes of the Kubernetes components and Cilium (`rules/k8s-alerts.yaml`) | logging | 1 |
+| alloy | alloy 1.13.0 (Alloy v1.20.0; one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`; drops recurring lines that never need action) | logging | 2 |
+| alloy-journal | alloy 1.13.0 (DaemonSet reading the journal of the MicroK8s services, `namespace="microk8s"`, `container=<service>`) | logging | 2 |
 | public-gateway | Gateway `public` (Cilium), LB IPAM pool, cloudflared 2026.9.3 | public-gateway | 0 |
 | external-dns | external-dns 1.23.0 (Cloudflare, mercuryksm.net) | external-dns | 1 |
-| ceph-csi-rbd | ceph-csi-rbd 3.18.1 + StorageClass `ceph-rbd` (Proxmox Ceph, pool `k8s`, Retain) | ceph-csi-rbd | 0 |
+| ceph-csi-rbd | ceph-csi-rbd 3.18.1 + StorageClass `ceph-rbd` (Proxmox Ceph, pool `k8s`, Retain), VolumeSnapshotClass `ceph-rbd` | ceph-csi-rbd | 0 |
 | cilium-monitoring | PodMonitors for the Cilium agent, operator, Envoy and Hubble (dashboards come with the cilium chart), HTTP visibility policies (`l7Visibility`) | kube-system | 2 |
 | obsidian-livesync | CouchDB 3.5.2 for Obsidian Self-hosted LiveSync, `talaria.mercuryksm.net` | obsidian-livesync | 2 |
 
@@ -37,8 +39,9 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 3. Once `sealed-secrets` is healthy, seal the credentials with the new cluster's key, commit and push:
    - `task seal:tailscale` → `platform/tailscale/templates/operator-oauth.sealedsecret.yaml` (OAuth client with the scopes and tag `tag:k8s-operator` described in the Tailscale operator docs)
    - `task seal:grafana` → `platform/kube-prometheus-stack/templates/grafana-admin.sealedsecret.yaml`
+   - `task seal:slack` → `platform/kube-prometheus-stack/templates/alertmanager-slack.sealedsecret.yaml` (bot token of the Slack App shared with lab-proxmox, `vault_slack_bot_token`; the bot must be invited to #k8s-alert)
 
-   Until then the Tailscale operator and Grafana pods wait for their Secrets
+   Until then the Tailscale operator, Grafana and Alertmanager pods wait for their Secrets
 4. To publish services on the internet (see [Publishing a service](#publishing-a-service)):
    - Create a tunnel dedicated to this cluster: `cloudflared tunnel login` and `cloudflared tunnel create <name>` (writes `~/.cloudflared/<tunnel-id>.json`). Do not route DNS to it by hand; external-dns does that
    - `task seal:cloudflared` → `platform/public-gateway/templates/cloudflared-credentials.sealedsecret.yaml`, and sets `tunnelID` in `platform/public-gateway/values.yaml`

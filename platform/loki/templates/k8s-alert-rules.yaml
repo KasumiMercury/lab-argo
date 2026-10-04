@@ -1,0 +1,11 @@
+# Alerting rules for the Loki ruler, written by the rules sidecar (loki_rule label) into /rules/fake
+# (fake is the tenant without auth_enabled)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-alert-rules
+  labels:
+    loki_rule: "1"
+data:
+  k8s-alerts.yaml: |-
+{{ .Files.Get "rules/k8s-alerts.yaml" | indent 4 }}

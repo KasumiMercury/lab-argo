@@ -30,6 +30,51 @@ kube-prometheus-stack:
               requests:
                 storage: 20Gi
 
+  # Alerts labelled notify="k8s-alert" (Loki ruler: platform/loki/rules/k8s-alerts.yaml) go to Slack
+  # #k8s-alert through the Slack App shared with pve-grafana and Zabbix (lab-proxmox, scope chat:write;
+  # invite the bot to the channel). Its bot token is the Secret alertmanager-slack (task seal:slack),
+  # mounted at /etc/alertmanager/secrets/alertmanager-slack/. Everything else still goes nowhere.
+  alertmanager:
+    alertmanagerSpec:
+      secrets:
+        - alertmanager-slack
+    config:
+      route:
+        group_by: [alertname, node, container]
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 4h
+        receiver: "null"
+        routes:
+          - matchers:
+              - alertname = "Watchdog"
+            receiver: "null"
+          - matchers:
+              - notify = "k8s-alert"
+            receiver: slack-k8s-alert
+      receivers:
+        - name: "null"
+        - name: slack-k8s-alert
+          slack_configs:
+            # Bot token through http_config: app_token_file together with update_message makes
+            # Alertmanager v0.34.1 panic while loading the configuration
+            - api_url: https://slack.com/api/chat.postMessage
+              http_config:
+                authorization:
+                  type: Bearer
+                  credentials_file: /etc/alertmanager/secrets/alertmanager-slack/bot-token
+              channel: "#k8s-alert"
+              send_resolved: true
+              # Resolving edits the original message instead of posting a new one
+              update_message: true
+              color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+              title: '[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}'
+              title_link: '{{ (index .Alerts 0).Annotations.dashboard }}'
+              text: |-
+                {{ range .Alerts }}*{{ .Annotations.summary }}*
+                {{ .Annotations.description }}
+                {{ end }}
+
   grafana:
     admin:
       # Delivered by templates/grafana-admin.sealedsecret.yaml (task seal:grafana)

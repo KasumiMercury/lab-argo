@@ -1,0 +1,80 @@
+# Error spikes in the logs of the Kubernetes components (MicroK8s services from the journal, CoreDNS,
+# Kubernetes events) and Cilium, evaluated by the Loki ruler and sent to the cluster's Alertmanager,
+# which routes notify="k8s-alert" to Slack #k8s-alert (platform/kube-prometheus-stack).
+# The thresholds sit above what node reboots and deployments produce: those log a burst of errors for a
+# minute or two, so each rule also needs the errors to go on for a while (for:).
+groups:
+  - name: k8s-logs
+    interval: 1m
+    rules:
+      - alert: MicroK8sErrorLogSpike
+        # kubelite (apiserver, scheduler, controller-manager, kubelet), containerd, k8s-dqlite, ...
+        expr: |
+          sum by (node, container) (
+            count_over_time({namespace="microk8s"} | detected_level=~"error|critical|fatal" [5m])
+          ) > 20
+        for: 10m
+        labels:
+          severity: warning
+          notify: k8s-alert
+        annotations:
+          summary: "MicroK8s {{ $labels.container }} on {{ $labels.node }} keeps logging errors"
+          description: "{{ $value }} error lines from snap.microk8s.daemon-{{ $labels.container }} on {{ $labels.node }} in the last 5 minutes, for over 10 minutes."
+          dashboard: "https://grafana.tail4a681d.ts.net/d/logs-overview/logs-overview?var-namespace=microk8s&var-container={{ $labels.container }}"
+
+      - alert: CiliumErrorLogSpike
+        expr: |
+          sum by (node, container) (
+            count_over_time({namespace="kube-system", container=~"cilium-agent|cilium-envoy|cilium-operator"} | detected_level=~"error|critical|fatal" [5m])
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+          notify: k8s-alert
+        annotations:
+          summary: "{{ $labels.container }} on {{ $labels.node }} keeps logging errors"
+          description: "{{ $value }} error lines from {{ $labels.container }} on {{ $labels.node }} in the last 5 minutes, for over 5 minutes."
+          dashboard: "https://grafana.tail4a681d.ts.net/d/logs-overview/logs-overview?var-namespace=kube-system&var-container={{ $labels.container }}"
+
+      - alert: CoreDNSErrorLogSpike
+        expr: |
+          sum by (pod) (
+            count_over_time({namespace="kube-system", container="coredns"} | detected_level=~"error|critical|fatal" [5m])
+          ) > 10
+        for: 5m
+        labels:
+          severity: warning
+          notify: k8s-alert
+        annotations:
+          summary: "CoreDNS keeps logging errors"
+          description: "{{ $value }} error lines from {{ $labels.pod }} in the last 5 minutes, for over 5 minutes (upstream DNS or the API server unreachable?)."
+          dashboard: "https://grafana.tail4a681d.ts.net/d/logs-overview/logs-overview?var-namespace=kube-system&var-container=coredns"
+
+      - alert: KubeSystemWarningEvents
+        # Warning events of the system Pods (BackOff, Unhealthy, FailedMount, ...)
+        expr: |
+          sum by (kind, name, reason) (
+            count_over_time({job="kubernetes-events", namespace="kube-system"} |= "type=Warning" | logfmt [10m])
+          ) > 3
+        for: 5m
+        labels:
+          severity: warning
+          notify: k8s-alert
+        annotations:
+          summary: "kube-system {{ $labels.kind }}/{{ $labels.name }}: repeated {{ $labels.reason }} events"
+          description: "{{ $value }} Warning events ({{ $labels.reason }}) for {{ $labels.kind }}/{{ $labels.name }} in kube-system in the last 10 minutes."
+          dashboard: "https://grafana.tail4a681d.ts.net/d/logs-overview/logs-overview?var-namespace=kube-system"
+
+      - alert: NodeWarningEvent
+        # NodeNotReady, Rebooted, ContainerGCFailed, InvalidDiskCapacity, ... (reported once, no for:)
+        expr: |
+          sum by (name, reason) (
+            count_over_time({job="kubernetes-events"} |= "kind=Node " |= "type=Warning" | logfmt [5m])
+          ) > 0
+        labels:
+          severity: warning
+          notify: k8s-alert
+        annotations:
+          summary: "Node {{ $labels.name }}: {{ $labels.reason }}"
+          description: "Kubernetes reported a {{ $labels.reason }} Warning event for node {{ $labels.name }}."
+          dashboard: "https://grafana.tail4a681d.ts.net/d/logs-overview/logs-overview?var-namespace=microk8s"

@@ -30,6 +30,20 @@ loki:
     # Usage statistics to grafana.com
     analytics:
       reporting_enabled: false
+    # Alerting rules (templates/k8s-alert-rules.yaml) are read from the directory the rules sidecar writes
+    # to and their alerts go to kube-prometheus-stack's Alertmanager
+    rulerConfig:
+      storage:
+        type: local
+        local:
+          directory: /rules
+      alertmanager_url: http://kube-prometheus-stack-alertmanager.monitoring.svc:9093
+      external_url: https://grafana.tail4a681d.ts.net/d/logs-overview/logs-overview
+
+  # One directory per tenant under the ruler's /rules; without auth_enabled the tenant is "fake"
+  sidecar:
+    rules:
+      folder: /rules/fake
 
   singleBinary:
     replicas: 1

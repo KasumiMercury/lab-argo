@@ -139,6 +139,22 @@ tasks:
           | kubeseal --format yaml > {{.OUTPUT}}
       - echo "sealed monitoring/grafana-admin -> {{.OUTPUT}}"
 
+  seal:slack:
+    desc: Seal the Slack bot token Alertmanager posts with (SLACK_BOT_TOKEN, prompted when unset; the Slack App shared with lab-proxmox's vault_slack_bot_token)
+    interactive: true
+    vars:
+      OUTPUT: platform/kube-prometheus-stack/templates/alertmanager-slack.sealedsecret.yaml
+    cmds:
+      - mkdir -p {{dir .OUTPUT}}
+      - |
+        [ -n "${SLACK_BOT_TOKEN:-}" ] || { printf 'Slack bot token (xoxb-...): '; stty -echo; read -r SLACK_BOT_TOKEN; stty echo; echo; }
+        export SLACK_BOT_TOKEN
+        yq -n '.apiVersion = "v1" | .kind = "Secret"
+          | .metadata.name = "alertmanager-slack" | .metadata.namespace = "monitoring"
+          | .stringData."bot-token" = strenv(SLACK_BOT_TOKEN)' \
+          | kubeseal --format yaml > {{.OUTPUT}}
+      - echo "sealed monitoring/alertmanager-slack -> {{.OUTPUT}}"
+
   seal:cloudflared:
     desc: Seal the Cloudflare Tunnel credentials (CLOUDFLARED_CREDENTIALS = file from `cloudflared tunnel create`, prompted when unset) and set tunnelID
     interactive: true
