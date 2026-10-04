@@ -1,0 +1,11 @@
+# Dashboard for the collected logs (errors, warnings and Warning events first), loaded by the Grafana sidecar
+# (grafana_dashboard label, all namespaces)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logs-overview-dashboard
+  labels:
+    grafana_dashboard: "1"
+data:
+  logs-overview.json: |-
+{{ .Files.Get "dashboards/logs-overview.json" | indent 4 }}
