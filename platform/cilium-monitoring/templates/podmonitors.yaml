@@ -3,6 +3,8 @@
 # the Ansible bootstrap installs Cilium before the Prometheus Operator CRDs exist, so the chart's ServiceMonitors
 # cannot be used. PodMonitors select the pods directly: the agent and operator have no metrics Service.
 # kube-prometheus-stack's Prometheus selects every PodMonitor in every namespace.
+# The chart's dashboards select series by pod label (k8s_app="cilium", io_cilium_app="operator"), so the
+# PodMonitors copy those labels onto the targets (podTargetLabels).
 {{- define "cilium-monitoring.endpoint" -}}
 - port: {{ .port }}
   interval: 30s
@@ -20,6 +22,9 @@ spec:
   selector:
     matchLabels:
       k8s-app: cilium
+  podTargetLabels:
+    - k8s-app
+    - io.cilium/app
   podMetricsEndpoints:
     {{- include "cilium-monitoring.endpoint" (dict "port" "prometheus" "cluster" .Values.cluster) | nindent 4 }}
     {{- include "cilium-monitoring.endpoint" (dict "port" "hubble-metrics" "cluster" .Values.cluster) | nindent 4 }}
@@ -32,6 +37,9 @@ spec:
   selector:
     matchLabels:
       io.cilium/app: operator
+  podTargetLabels:
+    - k8s-app
+    - io.cilium/app
   podMetricsEndpoints:
     {{- include "cilium-monitoring.endpoint" (dict "port" "prometheus" "cluster" .Values.cluster) | nindent 4 }}
 ---
@@ -43,5 +51,8 @@ spec:
   selector:
     matchLabels:
       k8s-app: cilium-envoy
+  podTargetLabels:
+    - k8s-app
+    - io.cilium/app
   podMetricsEndpoints:
     {{- include "cilium-monitoring.endpoint" (dict "port" "envoy-metrics" "cluster" .Values.cluster) | nindent 4 }}
