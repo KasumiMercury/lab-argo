@@ -47,7 +47,9 @@
           },
           "refId": "A",
           "expr": "max(up{namespace=\"obsidian-livesync\", service=\"couchdb\"}) or vector(0)",
-          "legendFormat": ""
+          "legendFormat": "",
+          "instant": true,
+          "range": false
         }
       ],
       "fieldConfig": {
@@ -114,7 +116,9 @@
           },
           "refId": "A",
           "expr": "couchdb_uptime_seconds{namespace=\"obsidian-livesync\"}",
-          "legendFormat": ""
+          "legendFormat": "",
+          "instant": true,
+          "range": false
         }
       ],
       "fieldConfig": {
@@ -154,7 +158,9 @@
           },
           "refId": "A",
           "expr": "kubelet_volume_stats_used_bytes{namespace=\"obsidian-livesync\", persistentvolumeclaim=\"data-couchdb-0\"} / kubelet_volume_stats_capacity_bytes{namespace=\"obsidian-livesync\", persistentvolumeclaim=\"data-couchdb-0\"}",
-          "legendFormat": ""
+          "legendFormat": "",
+          "instant": true,
+          "range": false
         }
       ],
       "fieldConfig": {
@@ -212,7 +218,9 @@
           },
           "refId": "A",
           "expr": "couchdb_httpd_clients_requesting_changes{namespace=\"obsidian-livesync\"}",
-          "legendFormat": ""
+          "legendFormat": "",
+          "instant": true,
+          "range": false
         }
       ],
       "fieldConfig": {
@@ -250,7 +258,9 @@
           },
           "refId": "A",
           "expr": "couchdb_open_databases{namespace=\"obsidian-livesync\"}",
-          "legendFormat": ""
+          "legendFormat": "",
+          "instant": true,
+          "range": false
         }
       ],
       "fieldConfig": {
@@ -288,7 +298,9 @@
           },
           "refId": "A",
           "expr": "couchdb_couch_replicator_jobs_running{namespace=\"obsidian-livesync\"}",
-          "legendFormat": "running"
+          "legendFormat": "running",
+          "instant": true,
+          "range": false
         },
         {
           "datasource": {
@@ -297,7 +309,9 @@
           },
           "refId": "B",
           "expr": "couchdb_couch_replicator_jobs_crashed{namespace=\"obsidian-livesync\"}",
-          "legendFormat": "crashed"
+          "legendFormat": "crashed",
+          "instant": true,
+          "range": false
         }
       ],
       "fieldConfig": {
