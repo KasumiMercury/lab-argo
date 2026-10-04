@@ -79,6 +79,14 @@ components:
     finalizer: true
     syncOptions:
       - SkipDryRunOnMissingResource=true
+  cilium-monitoring:
+    # PodMonitors for the Cilium Application (the pods live in kube-system)
+    namespace: kube-system
+    releaseName: cilium-monitoring
+    syncWave: "2"
+    finalizer: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
   obsidian-livesync:
     namespace: obsidian-livesync
     releaseName: obsidian-livesync

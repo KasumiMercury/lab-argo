@@ -1,0 +1,5 @@
+apiVersion: v2
+name: cilium-monitoring
+description: Prometheus scrape configuration for Cilium (agent, operator, Envoy, Hubble)
+type: application
+version: 0.1.0

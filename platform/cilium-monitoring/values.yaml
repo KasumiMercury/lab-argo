@@ -1,0 +1,3 @@
+# Value of the cluster label added to every Cilium series. The Hubble per-namespace dashboards filter on it
+# (label_values(cilium_version, cluster)).
+cluster: lab
