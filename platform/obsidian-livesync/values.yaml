@@ -8,3 +8,5 @@ couchdb:
     tag: 3.5.2
   # RBD volume (StorageClass ceph-rbd, reclaimPolicy Retain). Expandable in place.
   storage: 20Gi
+  # Unauthenticated Prometheus endpoint ([prometheus] additional_port), scraped by templates/monitoring.yaml
+  metricsPort: 17986

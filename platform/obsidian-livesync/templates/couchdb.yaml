@@ -4,6 +4,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: couchdb
+  labels:
+    app.kubernetes.io/name: couchdb
 spec:
   selector:
     app.kubernetes.io/name: couchdb
@@ -11,6 +13,9 @@ spec:
     - name: http
       port: 5984
       targetPort: http
+    - name: metrics
+      port: {{ .Values.couchdb.metricsPort }}
+      targetPort: metrics
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -62,6 +67,8 @@ spec:
           ports:
             - name: http
               containerPort: 5984
+            - name: metrics
+              containerPort: {{ .Values.couchdb.metricsPort }}
           # Every endpoint, /_up included, needs authentication (require_valid_user)
           readinessProbe:
             tcpSocket:
