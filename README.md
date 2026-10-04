@@ -18,6 +18,8 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 | csi-driver-nfs | csi-driver-nfs 4.13.4 + StorageClass `nfs-csi` (default) | kube-system | -1 |
 | tailscale | tailscale-operator 1.102.4 | tailscale | 0 |
 | kube-prometheus-stack | kube-prometheus-stack 91.9.0 | monitoring | 1 |
+| loki | loki 18.13.7 (Loki 3.7.8, grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki` | logging | 1 |
+| alloy | alloy 1.13.0 (Alloy v1.20.0; one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`) | logging | 2 |
 | public-gateway | Gateway `public` (Cilium), LB IPAM pool, cloudflared 2026.9.3 | public-gateway | 0 |
 | external-dns | external-dns 1.23.0 (Cloudflare, mercuryksm.net) | external-dns | 1 |
 | ceph-csi-rbd | ceph-csi-rbd 3.18.1 + StorageClass `ceph-rbd` (Proxmox Ceph, pool `k8s`, Retain) | ceph-csi-rbd | 0 |

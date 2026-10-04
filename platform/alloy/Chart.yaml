@@ -1,0 +1,9 @@
+apiVersion: v2
+name: alloy
+description: Grafana Alloy shipping pod logs and Kubernetes events to Loki
+type: application
+version: 0.1.0
+dependencies:
+  - name: alloy
+    version: 1.13.0
+    repository: https://grafana.github.io/helm-charts

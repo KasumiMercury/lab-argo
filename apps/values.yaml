@@ -58,6 +58,21 @@ components:
       # CRDs are too large for client-side apply
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
+  loki:
+    namespace: logging
+    releaseName: loki
+    syncWave: "1"
+    finalizer: true
+    syncOptions:
+      # ServiceMonitor CRD comes with kube-prometheus-stack in the same wave
+      - SkipDryRunOnMissingResource=true
+  alloy:
+    namespace: logging
+    releaseName: alloy
+    syncWave: "2"
+    finalizer: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
   public-gateway:
     namespace: public-gateway
     releaseName: public-gateway

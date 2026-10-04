@@ -45,3 +45,12 @@ kube-prometheus-stack:
       tls:
         - hosts:
             - grafana
+    # Pod logs and Kubernetes events collected by Alloy (platform/alloy) into Loki (platform/loki)
+    additionalDataSources:
+      - name: Loki
+        uid: loki
+        type: loki
+        access: proxy
+        url: http://loki.logging.svc:3100
+        jsonData:
+          maxLines: 1000

@@ -1,0 +1,90 @@
+# Single Loki process (all targets in one Pod) with chunks and TSDB index on the filesystem of an RBD
+# volume. Object storage would need Ceph RGW, which the Proxmox Ceph cluster does not run. Moving to S3
+# later means adding a new schemaConfig period; old chunks then age out with the retention.
+loki:
+  deploymentMode: Monolithic
+
+  loki:
+    # Single tenant: Alloy and Grafana talk to Loki without an X-Scope-OrgID header
+    auth_enabled: false
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: filesystem
+    schemaConfig:
+      configs:
+        - from: "2026-10-01"
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+    limits_config:
+      retention_period: 14d
+      # Alloy may replay older lines after a restart; keep them within the retention
+      reject_old_samples_max_age: 7d
+    compactor:
+      retention_enabled: true
+      delete_request_store: filesystem
+    # Usage statistics to grafana.com
+    analytics:
+      reporting_enabled: false
+
+  singleBinary:
+    replicas: 1
+    persistence:
+      enabled: true
+      storageClass: ceph-rbd
+      size: 10Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1Gi
+
+  # The chart defaults to 3 replicas of the simple scalable targets as well
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+  backend:
+    replicas: 0
+
+  # Grafana and Alloy use the single-binary Service directly; no nginx gateway, memcached, canary or tests
+  gateway:
+    enabled: false
+  chunksCache:
+    enabled: false
+  resultsCache:
+    enabled: false
+  lokiCanary:
+    enabled: false
+  test:
+    enabled: false
+
+  # Scraped by kube-prometheus-stack (selects every ServiceMonitor), dashboards picked up by the Grafana
+  # sidecar (grafana_dashboard label, all namespaces)
+  monitoring:
+    serviceMonitor:
+      enabled: true
+    dashboards:
+      enabled: true
+      # Bloom, object storage and the *-resources dashboards only apply to distributed installs
+      loki-bloom-build:
+        enabled: false
+      loki-bloom-gateway:
+        enabled: false
+      loki-thanos-object-storage:
+        enabled: false
+      loki-reads-resources:
+        enabled: false
+      loki-writes-resources:
+        enabled: false
+    # Recording rules used by the reads/writes dashboards, and the mixin's alerts (request errors, panics,
+    # compactor not running)
+    rules:
+      enabled: true
+    alerts:
+      enabled: true

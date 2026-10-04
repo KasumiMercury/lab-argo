@@ -1,0 +1,10 @@
+apiVersion: v2
+name: loki
+description: Loki (monolithic, filesystem on a Ceph RBD volume) holding the cluster's pod logs and events
+type: application
+version: 0.1.0
+dependencies:
+  # The OSS chart moved to grafana-community; grafana/loki 7.x is the Enterprise Logs chart
+  - name: loki
+    version: 18.13.7
+    repository: https://grafana-community.github.io/helm-charts
