@@ -11,13 +11,14 @@ kube-prometheus-stack:
     service:
       selector:
         k8s-app: kube-scheduler
-  # etcd is a Talos service, not a pod: the endpoint is the control-plane node (k8s-hod)
+  # etcd is a Talos service, not a pod. The chart would scrape it through an Endpoints object, which Argo CD
+  # never syncs (excluded by default), so Prometheus scrapes the control-plane node (k8s-hod) directly
+  # (additionalScrapeConfigs, job kube-etcd); kubeEtcd stays enabled for the etcd rules and dashboard.
   kubeEtcd:
-    endpoints:
-      - 192.168.110.181
     service:
-      port: 2381
-      targetPort: 2381
+      enabled: false
+    serviceMonitor:
+      enabled: false
   kubeProxy:
     enabled: false
 
@@ -29,6 +30,10 @@ kube-prometheus-stack:
       ruleSelectorNilUsesHelmValues: false
       probeSelectorNilUsesHelmValues: false
       retention: 15d
+      additionalScrapeConfigs:
+        - job_name: kube-etcd
+          static_configs:
+            - targets: ["192.168.110.181:2381"]
       retentionSize: 18GB
       storageSpec:
         volumeClaimTemplate:
