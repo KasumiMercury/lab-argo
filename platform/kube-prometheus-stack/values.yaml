@@ -11,6 +11,35 @@ kube-prometheus-stack:
   kubeProxy:
     enabled: false
 
+  # kubelite is one process with one metrics registry, so on the control-plane node the apiserver (:16443)
+  # and the kubelet (:10250) serve the same /metrics: every apiserver, scheduler and controller-manager
+  # series also arrived as job="kubelet" and every kubelet series as job="apiserver". Each job keeps only its
+  # own families; go_/process_/rest_client_/workqueue_ stay in both because each job's dashboards use them.
+  # The lists replace the chart's defaults, which are repeated first.
+  kubeApiServer:
+    serviceMonitor:
+      metricRelabelings:
+        # Chart default: drop excessively noisy apiserver buckets
+        - action: drop
+          regex: (etcd_request|apiserver_request_slo|apiserver_request_sli|apiserver_request)_duration_seconds_bucket;(0\.15|0\.2|0\.3|0\.35|0\.4|0\.45|0\.6|0\.7|0\.8|0\.9|1\.25|1\.5|1\.75|2|3|3\.5|4|4\.5|6|7|8|9|15|20|40|45|50)(\.0)?
+          sourceLabels: [__name__, le]
+        # The kubelet's families (scraped as job="kubelet" on every node)
+        - action: drop
+          regex: (kubelet|csi|dra|storage_operation|volume_manager|volume_operation|plugin_manager|reconstruct_volume|force_cleaned_failed_volume)_.+
+          sourceLabels: [__name__]
+  kubelet:
+    serviceMonitor:
+      # /metrics only; cAdvisor and probes have their own lists
+      metricRelabelings:
+        # Chart default: reduce bucket cardinality of kubelet storage operations
+        - action: drop
+          sourceLabels: [__name__, le]
+          regex: (csi_operations|storage_operation_duration)_seconds_bucket;(0.25|2.5|15|25|120|600)(\.0)?
+        # The families of the kubelet's own registry (what a worker node serves)
+        - action: keep
+          sourceLabels: [__name__]
+          regex: (kubelet|csi|dra|storage_operation|volume_manager|volume_operation|plugin_manager|reconstruct_volume|force_cleaned_failed_volume|go|process|rest_client|workqueue)_.+|kubernetes_build_info|kubernetes_feature_enabled
+
   prometheus:
     prometheusSpec:
       # Pick up ServiceMonitors/PodMonitors/rules from every Application, not only this release
