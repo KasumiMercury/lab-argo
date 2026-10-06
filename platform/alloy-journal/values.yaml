@@ -73,7 +73,22 @@ alloy:
           max_age       = "24h"
           relabel_rules = loki.relabel.journal.rules
           labels        = {namespace = "microk8s"}
-          forward_to    = [loki.process.klog_level.receiver]
+          forward_to    = [loki.process.drop_noise.receiver]
+        }
+
+        // Recurring warn lines that never need action (same idea as drop_noise of the Pod Alloy)
+        loki.process "drop_noise" {
+          // Every scrape of the apiserver's /metrics (also the kubelet's on the control-plane node, same
+          // registry in kubelite) opens an etcd client to measure apiserver_storage_size_bytes and closes it
+          // at once, often before gRPC has finished connecting to kine.sock. A real k8s-dqlite outage
+          // (connection refused, no such file) is not matched.
+          stage.match {
+            selector            = "{namespace=\"microk8s\", container=\"kubelite\"} |= \"kine.sock\" |~ \"use of closed network connection|operation was canceled\""
+            action              = "drop"
+            drop_counter_reason = "storage_size_probe"
+          }
+
+          forward_to = [loki.process.klog_level.receiver]
         }
 
         // klog lines (I/W/E/F + MMDD prefix) get their level from the prefix. Loki's own level detection
