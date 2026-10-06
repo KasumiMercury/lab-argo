@@ -1,6 +1,6 @@
 apiVersion: v2
 name: kube-prometheus-stack
-description: Prometheus, Alertmanager and Grafana for the MicroK8s cluster
+description: Prometheus, Alertmanager and Grafana for the Talos cluster
 type: application
 version: 0.1.0
 dependencies:

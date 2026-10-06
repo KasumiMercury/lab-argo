@@ -79,9 +79,9 @@ components:
     finalizer: true
     syncOptions:
       - SkipDryRunOnMissingResource=true
-  alloy-journal:
+  alloy-talos:
     namespace: logging
-    releaseName: alloy-journal
+    releaseName: alloy-talos
     syncWave: "2"
     finalizer: true
     syncOptions:

@@ -5,8 +5,6 @@
 #   ceph auth get-or-create client.k8s mon 'profile rbd' osd 'profile rbd pool=k8s' mgr 'profile rbd pool=k8s'
 # The key of client.k8s is delivered by templates/csi-rbd-secret.sealedsecret.yaml (task seal:ceph-csi).
 ceph-csi-rbd:
-  # MicroK8s keeps the kubelet under the snap (/var/lib/kubelet is only a symlink to it)
-  kubeletDir: /var/snap/microk8s/common/var/lib/kubelet
   csiConfig:
     - clusterID: 7fd500c3-d354-4119-a10f-98cbdbd15604
       monitors:

@@ -1,6 +1,4 @@
 csi-driver-nfs:
-  # MicroK8s runs the kubelet from the snap, not /var/lib/kubelet
-  kubeletDir: /var/snap/microk8s/common/var/lib/kubelet
   storageClass:
     create: true
     name: nfs-csi

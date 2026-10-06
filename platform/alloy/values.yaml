@@ -1,7 +1,6 @@
 # One Alloy instance reads the logs of every Pod through the Kubernetes API (kubelet log endpoint) and
-# watches cluster events, then pushes both to Loki. Reading through the API needs no hostPath mounts (the
-# MicroK8s kubelet lives under the snap) and keeps events from being collected once per node, which a
-# DaemonSet would do. Logs written while Alloy is down are read back from its last position on restart.
+# watches cluster events, then pushes both to Loki. Reading through the API needs no hostPath mounts and keeps
+# events from being collected once per node, which a DaemonSet would do. Logs written while Alloy is down are read back from its last position on restart.
 alloy:
   controller:
     type: deployment

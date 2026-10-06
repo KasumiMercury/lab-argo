@@ -1,0 +1,116 @@
+# Talos runs the control plane and runtime services (kubelet, etcd, containerd, apid, machined, ...) outside
+# Kubernetes, and it has no journal. Every node sends their logs as JSON lines to 127.0.0.1:6050 and its kernel
+# log to 127.0.0.1:6051 (machine.logging and KmsgLogConfig in lab-proxmox terraform/modules/talos_cluster).
+# One Alloy per node (hostNetwork) receives them and pushes them to Loki as namespace="talos",
+# container=<service> (kernel for the kernel log), node=<hostname>, so they show up in the logs dashboard next to
+# the Pods.
+alloy:
+  controller:
+    type: daemonset
+    # machined sends from the host network namespace, which cannot reach Pod or Service IPs
+    hostNetwork: true
+    dnsPolicy: ClusterFirstWithHostNet
+    tolerations:
+      - operator: Exists
+
+  alloy:
+    # Usage statistics to grafana.com
+    enableReporting: false
+    # otelcol.receiver.tcplog is experimental
+    stabilityLevel: experimental
+    mounts:
+      varlog: false
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+    configMap:
+      content: |
+        logging {
+          level  = "info"
+          format = "logfmt"
+        }
+
+        otelcol.receiver.tcplog "service" {
+          listen_address = "127.0.0.1:6050"
+          output {
+            logs = [otelcol.exporter.loki.talos.input]
+          }
+        }
+
+        otelcol.receiver.tcplog "kernel" {
+          listen_address = "127.0.0.1:6051"
+          output {
+            logs = [otelcol.exporter.loki.talos.input]
+          }
+        }
+
+        // The line arrives as {"body": "<the JSON line Talos sent>"}
+        otelcol.exporter.loki "talos" {
+          forward_to = [loki.process.talos.receiver]
+        }
+
+        loki.process "talos" {
+          stage.json {
+            expressions = {body = ""}
+          }
+          stage.json {
+            source      = "body"
+            expressions = {msg = "", service = "\"talos-service\"", level = "\"talos-level\"", time = "\"talos-time\""}
+          }
+          // Kernel log lines carry no talos-service. The chart renders this config with Helm's tpl, hence the
+          // {{`...`}} around Alloy's own templates.
+          stage.template {
+            source   = "service"
+            template = {{`"{{ if .Value }}{{ .Value }}{{ else }}kernel{{ end }}"`}}
+          }
+          stage.template {
+            source   = "job"
+            template = {{`"talos/{{ .service }}"`}}
+          }
+          stage.labels {
+            values = {container = "service", level = "", job = ""}
+          }
+          stage.label_drop {
+            values = ["exporter"]
+          }
+          stage.static_labels {
+            values = {namespace = "talos", node = constants.hostname}
+          }
+
+          // SELinux audit records (thousands per minute)
+          stage.drop {
+            source              = "service"
+            value               = "auditd"
+            drop_counter_reason = "auditd"
+          }
+          // The console dashboard polls machined every second and each call is logged
+          stage.drop {
+            source              = "msg"
+            expression          = "match with service \"dashboard\""
+            drop_counter_reason = "console_dashboard"
+          }
+
+          stage.timestamp {
+            source            = "time"
+            format            = "RFC3339Nano"
+            action_on_failure = "skip"
+          }
+          stage.output {
+            source = "msg"
+          }
+
+          forward_to = [loki.write.default.receiver]
+        }
+
+        loki.write "default" {
+          endpoint {
+            url = "http://loki.logging.svc:3100/loki/api/v1/push"
+          }
+        }
+
+  # Alloy's own metrics (loki_write_* for dropped or failed pushes)
+  serviceMonitor:
+    enabled: true

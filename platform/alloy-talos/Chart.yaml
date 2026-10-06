@@ -1,0 +1,9 @@
+apiVersion: v2
+name: alloy-talos
+description: Alloy on every node receiving the service and kernel logs of Talos (kubelet, etcd, containerd, ...) and shipping them to Loki
+type: application
+version: 0.1.0
+dependencies:
+  - name: alloy
+    version: 1.13.0
+    repository: https://grafana.github.io/helm-charts

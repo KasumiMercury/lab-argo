@@ -1,44 +1,25 @@
 kube-prometheus-stack:
-  # MicroK8s runs the control plane inside kubelite: the controller-manager and scheduler bind to
-  # localhost, there is no etcd (dqlite), and kube-proxy is replaced by Cilium. Scraping them would only
-  # produce "target down" alerts.
+  # Talos runs the controller-manager and scheduler as static pods (hostNetwork) bound to 0.0.0.0 and serves
+  # etcd metrics on :2381 of the control-plane node (patches/controlplane.yaml of lab-proxmox
+  # terraform/modules/talos_cluster). The static pods carry k8s-app, not the chart's default component label.
+  # kube-proxy is replaced by Cilium.
   kubeControllerManager:
-    enabled: false
+    service:
+      selector:
+        k8s-app: kube-controller-manager
   kubeScheduler:
-    enabled: false
+    service:
+      selector:
+        k8s-app: kube-scheduler
+  # etcd is a Talos service, not a pod: the endpoint is the control-plane node (k8s-hod)
   kubeEtcd:
-    enabled: false
+    endpoints:
+      - 192.168.110.181
+    service:
+      port: 2381
+      targetPort: 2381
   kubeProxy:
     enabled: false
-
-  # kubelite is one process with one metrics registry, so on the control-plane node the apiserver (:16443)
-  # and the kubelet (:10250) serve the same /metrics: every apiserver, scheduler and controller-manager
-  # series also arrived as job="kubelet" and every kubelet series as job="apiserver". Each job keeps only its
-  # own families; go_/process_/rest_client_/workqueue_ stay in both because each job's dashboards use them.
-  # The lists replace the chart's defaults, which are repeated first.
-  kubeApiServer:
-    serviceMonitor:
-      metricRelabelings:
-        # Chart default: drop excessively noisy apiserver buckets
-        - action: drop
-          regex: (etcd_request|apiserver_request_slo|apiserver_request_sli|apiserver_request)_duration_seconds_bucket;(0\.15|0\.2|0\.3|0\.35|0\.4|0\.45|0\.6|0\.7|0\.8|0\.9|1\.25|1\.5|1\.75|2|3|3\.5|4|4\.5|6|7|8|9|15|20|40|45|50)(\.0)?
-          sourceLabels: [__name__, le]
-        # The kubelet's families (scraped as job="kubelet" on every node)
-        - action: drop
-          regex: (kubelet|csi|dra|storage_operation|volume_manager|volume_operation|plugin_manager|reconstruct_volume|force_cleaned_failed_volume)_.+
-          sourceLabels: [__name__]
-  kubelet:
-    serviceMonitor:
-      # /metrics only; cAdvisor and probes have their own lists
-      metricRelabelings:
-        # Chart default: reduce bucket cardinality of kubelet storage operations
-        - action: drop
-          sourceLabels: [__name__, le]
-          regex: (csi_operations|storage_operation_duration)_seconds_bucket;(0.25|2.5|15|25|120|600)(\.0)?
-        # The families of the kubelet's own registry (what a worker node serves)
-        - action: keep
-          sourceLabels: [__name__]
-          regex: (kubelet|csi|dra|storage_operation|volume_manager|volume_operation|plugin_manager|reconstruct_volume|force_cleaned_failed_volume|go|process|rest_client|workqueue)_.+|kubernetes_build_info|kubernetes_feature_enabled
 
   prometheus:
     prometheusSpec:

@@ -1,4 +1,4 @@
-# Error spikes in the logs of the Kubernetes components (MicroK8s services from the journal, CoreDNS,
+# Error spikes in the logs of the Kubernetes components (Talos services such as kubelet and etcd, CoreDNS,
 # Kubernetes events) and Cilium, evaluated by the Loki ruler and sent to the cluster's Alertmanager,
 # which routes notify="k8s-alert" to Slack #k8s-alert (platform/kube-prometheus-stack).
 # The thresholds sit above what node reboots and deployments produce: those log a burst of errors for a
@@ -7,20 +7,20 @@ groups:
   - name: k8s-logs
     interval: 1m
     rules:
-      - alert: MicroK8sErrorLogSpike
-        # kubelite (apiserver, scheduler, controller-manager, kubelet), containerd, k8s-dqlite, ...
+      - alert: TalosErrorLogSpike
+        # Talos services: kubelet, etcd, cri (containerd), machined controllers, the kernel, ...
         expr: |
           sum by (node, container) (
-            count_over_time({namespace="microk8s"} | detected_level=~"error|critical|fatal" [5m])
+            count_over_time({namespace="talos"} | detected_level=~"error|critical|fatal" [5m])
           ) > 20
         for: 10m
         labels:
           severity: warning
           notify: k8s-alert
         annotations:
-          summary: "MicroK8s {{ $labels.container }} on {{ $labels.node }} keeps logging errors"
-          description: "{{ $value }} error lines from snap.microk8s.daemon-{{ $labels.container }} on {{ $labels.node }} in the last 5 minutes, for over 10 minutes."
-          dashboard: "https://grafana.tail4a681d.ts.net/d/logs-overview/logs-overview?var-namespace=microk8s&var-container={{ $labels.container }}"
+          summary: "Talos {{ $labels.container }} on {{ $labels.node }} keeps logging errors"
+          description: "{{ $value }} error lines from the Talos service {{ $labels.container }} on {{ $labels.node }} in the last 5 minutes, for over 10 minutes."
+          dashboard: "https://grafana.tail4a681d.ts.net/d/logs-overview/logs-overview?var-namespace=talos&var-container={{ $labels.container }}"
 
       - alert: CiliumErrorLogSpike
         expr: |
@@ -77,4 +77,4 @@ groups:
         annotations:
           summary: "Node {{ $labels.name }}: {{ $labels.reason }}"
           description: "Kubernetes reported a {{ $labels.reason }} Warning event for node {{ $labels.name }}."
-          dashboard: "https://grafana.tail4a681d.ts.net/d/logs-overview/logs-overview?var-namespace=microk8s"
+          dashboard: "https://grafana.tail4a681d.ts.net/d/logs-overview/logs-overview?var-namespace=talos"

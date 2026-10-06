@@ -1,6 +1,6 @@
 # lab-argo
 
-Argo CD configuration for the MicroK8s cluster built by [lab-proxmox](https://github.com/KasumiMercury/lab-proxmox).
+Argo CD configuration for the Talos cluster built by [lab-proxmox](https://github.com/KasumiMercury/lab-proxmox).
 lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything is managed from this repository.
 
 ## Layout
@@ -21,7 +21,7 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 | kube-prometheus-stack | kube-prometheus-stack 91.9.0; Alertmanager sends the Loki ruler alerts and every warning/critical Prometheus alert to Slack #k8s-alert | monitoring | 1 |
 | loki | loki 18.13.7 (Loki 3.7.8, grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki`, dashboard `Logs overview`, ruler alerts on error spikes of the Kubernetes components and Cilium (`rules/k8s-alerts.yaml`) | logging | 1 |
 | alloy | alloy 1.13.0 (Alloy v1.20.0; one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`; drops recurring lines that never need action) | logging | 2 |
-| alloy-journal | alloy 1.13.0 (DaemonSet reading the journal of the MicroK8s services, `namespace="microk8s"`, `container=<service>`) | logging | 2 |
+| alloy-talos | alloy 1.13.0 (hostNetwork DaemonSet receiving the Talos service and kernel logs on 127.0.0.1:6050/6051, `namespace="talos"`, `container=<service>`) | logging | 2 |
 | public-gateway | Gateway `public` (Cilium), LB IPAM pool, cloudflared 2026.9.3 | public-gateway | 0 |
 | external-dns | external-dns 1.23.0 (Cloudflare, mercuryksm.net) | external-dns | 1 |
 | ceph-csi-rbd | ceph-csi-rbd 3.18.1 + StorageClass `ceph-rbd` (Proxmox Ceph, pool `k8s`, Retain), VolumeSnapshotClass `ceph-rbd` | ceph-csi-rbd | 0 |
@@ -29,12 +29,12 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 | obsidian-livesync | CouchDB 3.5.2 for Obsidian Self-hosted LiveSync, `talaria.mercuryksm.net` | obsidian-livesync | 2 |
 
 - `argocd` and `cilium` have no resources finalizer: deleting their Application leaves Argo CD and the CNI running
-- `argocd` adopts the release installed by Ansible, so its chart version must match `argocd_chart_version` in lab-proxmox
+- `argocd` adopts the release installed by the lab-proxmox bootstrap, so its chart version must match `version` in lab-proxmox `kubernetes/argocd.yaml`
 - The Argo CD UI/API is on the tailnet at `https://argocd.<tailnet>.ts.net` (`platform/argocd/templates/server-ingress.yaml`). The Tailscale proxy terminates TLS, so argocd-server runs with `server.insecure` (also set in the lab-proxmox bootstrap values). CLI: `argocd login argocd.<tailnet>.ts.net --grpc-web`
 - Argo CD reports Application health (custom health check in `platform/argocd/values.yaml`), so later waves wait for earlier ones
 
 ## Bootstrap
-1. Build the cluster with lab-proxmox (`task deploy TF_ENV=k8s`). The kubeconfig lands in `../lab-proxmox/ansible/artifacts/k8s.kubeconfig`, which the Taskfile uses by default (override with `KUBECONFIG=...`)
+1. Build the cluster with lab-proxmox (`task tf:apply TF_ENV=k8s` and `task k8s:bootstrap TF_ENV=k8s`). The kubeconfig lands in `../lab-proxmox/ansible/artifacts/k8s.kubeconfig`, which the Taskfile uses by default (override with `KUBECONFIG=...`)
 2. `task bootstrap` (applies `bootstrap/root.yaml` to the cluster in `KUBECONFIG`)
 3. Once `sealed-secrets` is healthy, seal the credentials with the new cluster's key, commit and push:
    - `task seal:tailscale` → `platform/tailscale/templates/operator-oauth.sealedsecret.yaml` (OAuth client with the scopes and tag `tag:k8s-operator` described in the Tailscale operator docs)
@@ -101,4 +101,4 @@ Prometheus keeps its TSDB there (20Gi, 15 days).
 ## Secrets
 - Only SealedSecrets are committed (`*.sealedsecret.yaml`); plaintext `*secret.yaml` files are gitignored
 - The `seal:*` tasks build the Secret in memory from environment variables or a prompt and pipe it to `kubeseal`, so plaintext never touches the disk
-- SealedSecrets can only be decrypted by the cluster that sealed them. Rebuilding the cluster means sealing again (or restoring the controller key: `kubectl -n kube-system get secret -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml`)
+- SealedSecrets can only be decrypted by the cluster that sealed them. Rebuilding the cluster means sealing again, or restoring the controller key: export it from the old cluster (`kubectl -n kube-system get secret -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml`) and pass the file to the lab-proxmox bootstrap (`task k8s:bootstrap TF_ENV=k8s SEALED_SECRETS_KEY=<file>`), which applies it before the controller starts
