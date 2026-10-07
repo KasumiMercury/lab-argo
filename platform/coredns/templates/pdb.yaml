@@ -1,0 +1,10 @@
+# Talos installs CoreDNS (2 replicas) without a PDB, so a drain could stop both at once
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: coredns
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      k8s-app: kube-dns

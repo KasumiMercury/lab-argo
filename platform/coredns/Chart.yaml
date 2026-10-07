@@ -1,0 +1,5 @@
+apiVersion: v2
+name: coredns
+description: PodDisruptionBudget for the CoreDNS that Talos installs (the spread across nodes is set by the lab-proxmox bootstrap)
+type: application
+version: 0.1.0

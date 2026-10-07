@@ -107,6 +107,12 @@ components:
     finalizer: true
     syncOptions:
       - SkipDryRunOnMissingResource=true
+  coredns:
+    # Only a PDB; the Deployment itself belongs to Talos
+    namespace: kube-system
+    releaseName: coredns
+    syncWave: "0"
+    finalizer: true
   cilium-monitoring:
     # PodMonitors for the Cilium Application (the pods live in kube-system) and L7 visibility policies
     namespace: kube-system
