@@ -28,6 +28,7 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 | coredns | PodDisruptionBudget (`minAvailable: 1`) for the CoreDNS installed by Talos; its spread across nodes is set by the lab-proxmox bootstrap | kube-system | 0 |
 | cilium-monitoring | PodMonitors for the Cilium agent, operator, Envoy and Hubble (dashboards come with the cilium chart), HTTP visibility policies (`l7Visibility`) | kube-system | 2 |
 | obsidian-livesync | CouchDB 3.5.2 for Obsidian Self-hosted LiveSync, `talaria.mercuryksm.net` | obsidian-livesync | 2 |
+| vaultwarden | Vaultwarden 1.37.4 (SQLite on a 2Gi `ceph-rbd` volume), tailnet only at `https://vault.<tailnet>.ts.net`; daily backup to the NAS (`vaultwarden-backup` on `/nfs/k8s`, 30 days) | vaultwarden | 2 |
 
 - `argocd` and `cilium` have no resources finalizer: deleting their Application leaves Argo CD and the CNI running
 - `argocd` adopts the release installed by the lab-proxmox bootstrap, so its chart version must match `version` in lab-proxmox `kubernetes/argocd.yaml`
@@ -50,6 +51,9 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
    - Commit and push. cloudflared is deployed and the Gateway gets the tunnel as its DNS target only once `tunnelID` is set
 5. Ceph RBD volumes (`ceph-rbd`): on a Proxmox host create the pool and the client once (commands in `platform/ceph-csi-rbd/values.yaml`), then `task seal:ceph-csi` (`CEPH_USER_KEY=$(ssh root@<host> ceph auth get-key client.k8s)`). The k8s nodes must reach the mons and OSDs (192.168.20.0/24, TCP 3300/6789/6800-7300)
 6. `task seal:couchdb` → `platform/obsidian-livesync/templates/couchdb-admin.sealedsecret.yaml` (CouchDB admin for LiveSync)
+7. Vaultwarden (see [Vaultwarden](#vaultwarden)):
+   - In the tailnet policy, let the operator own `tag:vaultwarden` (`"tag:vaultwarden": ["tag:k8s-operator"]` in `tagOwners`) and grant `tcp:443` on it to the users who need the vault only
+   - `docker run --rm -it vaultwarden/server /vaultwarden hash --preset owasp`, then `task seal:vaultwarden` with the printed `ADMIN_TOKEN` → `platform/vaultwarden/templates/admin-token.sealedsecret.yaml`. Until then `/admin` is disabled
 
 ## Reproducing what Argo CD renders
 Tools are pinned in `mise.toml` (`mise install`).
@@ -98,6 +102,14 @@ external-dns only touches records that carry its TXT ownership entry (owner `lab
 The export must allow the k8s VMs (`192.168.110.0/24`) and let root create directories (`no_root_squash`).
 The Proxmox storage `strix0` (`/nfs/proxmox`) is a different export, reachable from the Proxmox hosts (`192.168.20.0/24`) only.
 Prometheus keeps its TSDB there (20Gi, 15 days).
+
+## Vaultwarden
+`https://vault.<tailnet>.ts.net` is served by a Tailscale Ingress without Funnel, so only tailnet devices that the policy grants reach it; there is no HTTPRoute on the public Gateway. Clients (browser extension, mobile app) need Tailscale connected to sync; the offline cache keeps the vault readable.
+
+- Signups are closed. Invite an address from `/admin` (Users → Invite); without SMTP the invited address can register directly
+- No SMTP and no mobile push (the apps sync on open and periodically)
+- Backup: the CronJob `vaultwarden-backup` runs at 03:30 JST next to the Vaultwarden Pod (the RBD volume is ReadWriteOnce), takes a consistent SQLite copy with `vaultwarden backup` and writes `vaultwarden-<UTC time>.tar.gz` (db.sqlite3, attachments, sends, RSA key) to `192.168.110.5:/nfs/k8s/vaultwarden-backup`, deleting archives older than 30 days. The PV is static with Retain, so the archives outlive the PVC and the Application. A failed run fires KubeJobFailed. Run one now: `kubectl -n vaultwarden create job --from=cronjob/vaultwarden-backup backup-manual`
+- Restore: scale the StatefulSet to 0, extract the archive into the data volume (remove `db.sqlite3-wal` and `db.sqlite3-shm` first), `chown -R 1000:1000`, scale back to 1
 
 ## Secrets
 - Only SealedSecrets are committed (`*.sealedsecret.yaml`); plaintext `*secret.yaml` files are gitignored

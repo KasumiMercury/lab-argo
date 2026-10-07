@@ -1,0 +1,103 @@
+# Single-replica Vaultwarden on SQLite. ADMIN_TOKEN (Argon2id PHC string) comes from
+# templates/admin-token.sealedsecret.yaml (task seal:vaultwarden); without it the /admin page stays disabled.
+apiVersion: v1
+kind: Service
+metadata:
+  name: vaultwarden
+  labels:
+    app.kubernetes.io/name: vaultwarden
+spec:
+  selector:
+    app.kubernetes.io/name: vaultwarden
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vaultwarden
+spec:
+  serviceName: vaultwarden
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vaultwarden
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vaultwarden
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: vaultwarden
+          image: "{{ .Values.vaultwarden.image.repository }}:{{ .Values.vaultwarden.image.tag }}"
+          env:
+            - name: DOMAIN
+              value: https://{{ .Values.hostname }}.{{ .Values.tailnet }}
+            # Port 80 needs root
+            - name: ROCKET_PORT
+              value: "8080"
+            # Accounts are created by invitation from /admin. Without SMTP the invited address registers directly
+            - name: SIGNUPS_ALLOWED
+              value: "false"
+            - name: SHOW_PASSWORD_HINT
+              value: "false"
+            # The Tailscale proxy is the peer; the client address is in X-Forwarded-For
+            - name: IP_HEADER
+              value: X-Forwarded-For
+            - name: ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vaultwarden-admin
+                  key: token
+                  optional: true
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /alive
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: ceph-rbd
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.vaultwarden.storage }}

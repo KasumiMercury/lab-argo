@@ -128,3 +128,10 @@ components:
     finalizer: true
     syncOptions:
       - SkipDryRunOnMissingResource=true
+  vaultwarden:
+    namespace: vaultwarden
+    releaseName: vaultwarden
+    syncWave: "2"
+    finalizer: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true

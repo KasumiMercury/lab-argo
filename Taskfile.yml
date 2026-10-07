@@ -225,3 +225,27 @@ tasks:
           | .stringData.username = strenv(COUCHDB_USER) | .stringData.password = strenv(COUCHDB_PASSWORD)' \
           | kubeseal --format yaml > {{.OUTPUT}}
       - echo "sealed obsidian-livesync/couchdb-admin -> {{.OUTPUT}}"
+
+  seal:vaultwarden:
+    desc: Seal the Vaultwarden ADMIN_TOKEN (VAULTWARDEN_ADMIN_TOKEN = Argon2id PHC string, prompted when unset; make it with `docker run --rm -it vaultwarden/server /vaultwarden hash --preset owasp`)
+    interactive: true
+    vars:
+      OUTPUT: platform/vaultwarden/templates/admin-token.sealedsecret.yaml
+    cmds:
+      - mkdir -p {{dir .OUTPUT}}
+      - |
+        [ -n "${VAULTWARDEN_ADMIN_TOKEN:-}" ] || { printf 'ADMIN_TOKEN ($argon2id$...): '; read -r VAULTWARDEN_ADMIN_TOKEN; }
+        # Accept the line `vaultwarden hash` prints, ADMIN_TOKEN='...', as well as the bare string
+        VAULTWARDEN_ADMIN_TOKEN="${VAULTWARDEN_ADMIN_TOKEN#ADMIN_TOKEN=}"
+        VAULTWARDEN_ADMIN_TOKEN="${VAULTWARDEN_ADMIN_TOKEN#\'}"
+        VAULTWARDEN_ADMIN_TOKEN="${VAULTWARDEN_ADMIN_TOKEN%\'}"
+        case "$VAULTWARDEN_ADMIN_TOKEN" in
+          '$argon2id$'*) ;;
+          *) echo "not an Argon2id PHC string" >&2; exit 1 ;;
+        esac
+        export VAULTWARDEN_ADMIN_TOKEN
+        yq -n '.apiVersion = "v1" | .kind = "Secret"
+          | .metadata.name = "vaultwarden-admin" | .metadata.namespace = "vaultwarden"
+          | .stringData.token = strenv(VAULTWARDEN_ADMIN_TOKEN)' \
+          | kubeseal --format yaml > {{.OUTPUT}}
+      - echo "sealed vaultwarden/vaultwarden-admin -> {{.OUTPUT}}"
