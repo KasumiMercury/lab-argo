@@ -1,0 +1,16 @@
+# Default for every proxy the operator creates for an Ingress or Service (proxyConfig.defaultProxyClass).
+# Without it the proxies requested 1m/1Mi while using 24-34Mi
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: default
+spec:
+  statefulSet:
+    pod:
+      tailscaleContainer:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 48Mi
+          limits:
+            memory: 96Mi
