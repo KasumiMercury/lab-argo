@@ -28,6 +28,9 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: vaultwarden
+      annotations:
+        # ADMIN_TOKEN is read at startup only: roll the Pod when the sealed token changes
+        checksum/admin-token: {{ include (print $.Template.BasePath "/admin-token.sealedsecret.yaml") . | sha256sum | trunc 16 }}
     spec:
       securityContext:
         runAsNonRoot: true
