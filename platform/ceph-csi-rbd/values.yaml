@@ -16,6 +16,9 @@ ceph-csi-rbd:
   storageClass:
     create: true
     name: ceph-rbd
+    # Default for PVCs without a storageClassName (not nfs-csi: NFS is not POSIX enough for databases)
+    annotations:
+      storageclass.kubernetes.io/is-default-class: "true"
     clusterID: 7fd500c3-d354-4119-a10f-98cbdbd15604
     pool: k8s
     imageFeatures: layering,exclusive-lock,object-map,fast-diff

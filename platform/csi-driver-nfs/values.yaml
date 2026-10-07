@@ -2,8 +2,6 @@ csi-driver-nfs:
   storageClass:
     create: true
     name: nfs-csi
-    annotations:
-      storageclass.kubernetes.io/is-default-class: "true"
     parameters:
       # NAS export dedicated to Kubernetes (allowed for the k8s VM subnet 192.168.110.0/24).
       # Proxmox's strix0 (/nfs/proxmox) is exported to 192.168.20.0/24 only, so the VMs cannot mount it.

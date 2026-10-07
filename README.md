@@ -16,7 +16,7 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 | argocd | argo-cd 10.8.1 (Argo CD v3.5.2) | argocd | -2 |
 | sealed-secrets | sealed-secrets 2.20.0 | kube-system | -1 |
 | snapshot-controller | snapshot-controller 5.3.0 (piraeus; external-snapshotter v8.6.0 CRDs and controller) | kube-system | -2 |
-| csi-driver-nfs | csi-driver-nfs 4.13.4 + StorageClass `nfs-csi` (default), VolumeSnapshotClass `nfs-csi` | kube-system | -1 |
+| csi-driver-nfs | csi-driver-nfs 4.13.4 + StorageClass `nfs-csi`, VolumeSnapshotClass `nfs-csi` | kube-system | -1 |
 | tailscale | tailscale-operator 1.102.4 | tailscale | 0 |
 | kube-prometheus-stack | kube-prometheus-stack 91.9.0; Alertmanager sends the Loki ruler alerts and every warning/critical Prometheus alert to Slack #k8s-alert | monitoring | 1 |
 | loki | loki 18.13.7 (Loki 3.7.8, grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki`, dashboard `Logs overview`, ruler alerts on error spikes of the Kubernetes components and Cilium (`rules/k8s-alerts.yaml`) | logging | 1 |
@@ -24,7 +24,7 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 | alloy-talos | alloy 1.13.0 (hostNetwork DaemonSet receiving the Talos service and kernel logs on 127.0.0.1:6050/6051, `namespace="talos"`, `container=<service>`) | logging | 2 |
 | public-gateway | Gateway `public` (Cilium), LB IPAM pool, cloudflared 2026.9.3 | public-gateway | 0 |
 | external-dns | external-dns 1.23.0 (Cloudflare, mercuryksm.net) | external-dns | 1 |
-| ceph-csi-rbd | ceph-csi-rbd 3.18.1 + StorageClass `ceph-rbd` (Proxmox Ceph, pool `k8s`, Retain), VolumeSnapshotClass `ceph-rbd` | ceph-csi-rbd | 0 |
+| ceph-csi-rbd | ceph-csi-rbd 3.18.1 + StorageClass `ceph-rbd` (default; Proxmox Ceph, pool `k8s`, Retain), VolumeSnapshotClass `ceph-rbd` | ceph-csi-rbd | 0 |
 | coredns | PodDisruptionBudget (`minAvailable: 1`) for the CoreDNS installed by Talos; its spread across nodes is set by the lab-proxmox bootstrap | kube-system | 0 |
 | cilium-monitoring | PodMonitors for the Cilium agent, operator, Envoy and Hubble (dashboards come with the cilium chart), HTTP visibility policies (`l7Visibility`) | kube-system | 2 |
 | obsidian-livesync | CouchDB 3.5.2 for Obsidian Self-hosted LiveSync, `talaria.mercuryksm.net` | obsidian-livesync | 2 |
