@@ -21,6 +21,13 @@ kube-prometheus-stack:
       enabled: false
   kubeProxy:
     enabled: false
+  defaultRules:
+    disabled:
+      # They ask whether every Pod's requests fit on the nodes left after the largest one fails. Here the largest
+      # node (k8s-hod) is the only control plane, so nothing is rescheduled when it fails, and the HA branch of
+      # the expressions is not gated on the control-plane count, so they fire permanently
+      KubeMemoryOvercommit: true
+      KubeCPUOvercommit: true
 
   prometheus:
     prometheusSpec:
