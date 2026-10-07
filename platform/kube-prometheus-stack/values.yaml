@@ -35,10 +35,11 @@ kube-prometheus-stack:
           static_configs:
             - targets: ["192.168.110.181:2381"]
       retentionSize: 18GB
+      # Not NFS: Prometheus does not support its TSDB on non-POSIX filesystems
       storageSpec:
         volumeClaimTemplate:
           spec:
-            storageClassName: nfs-csi
+            storageClassName: ceph-rbd
             accessModes:
               - ReadWriteOnce
             resources:
