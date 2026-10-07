@@ -21,3 +21,54 @@ argo-cd:
         end
         return hs
     # CiliumIdentity/CiliumEndpoint are already in the chart's default resource.exclusions
+
+  # From the observed peaks (application-controller ~840Mi, repo-server ~200Mi while rendering)
+  controller:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 1Gi
+      limits:
+        memory: 1536Mi
+  repoServer:
+    resources:
+      requests:
+        cpu: 20m
+        memory: 256Mi
+      limits:
+        memory: 512Mi
+  server:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+  dex:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+  redis:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 48Mi
+      limits:
+        memory: 96Mi
+  notifications:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 48Mi
+      limits:
+        memory: 96Mi
+  applicationSet:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 48Mi
+      limits:
+        memory: 96Mi

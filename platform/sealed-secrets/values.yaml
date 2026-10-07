@@ -1,3 +1,9 @@
 sealed-secrets:
   # kubeseal's default controller name (kube-system/sealed-secrets-controller), so no flags are needed
   fullnameOverride: sealed-secrets-controller
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 128Mi

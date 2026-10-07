@@ -11,8 +11,53 @@ ceph-csi-rbd:
         - 192.168.20.10:6789
         - 192.168.20.20:6789
         - 192.168.20.30:6789
+  # nodeplugin.plugin.resources also applies to csi-rbdplugin, csi-rbdplugin-controller and
+  # liveness-prometheus of the provisioner, which use 20-40Mi, so its request stays below the nodeplugin's ~85Mi
+  nodeplugin:
+    registrar:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+        limits:
+          memory: 96Mi
+    plugin:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
   provisioner:
     replicaCount: 2
+    provisioner:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+        limits:
+          memory: 96Mi
+    attacher:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+        limits:
+          memory: 96Mi
+    resizer:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+        limits:
+          memory: 96Mi
+    snapshotter:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+        limits:
+          memory: 96Mi
   storageClass:
     create: true
     name: ceph-rbd

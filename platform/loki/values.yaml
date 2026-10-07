@@ -44,6 +44,12 @@ loki:
   sidecar:
     rules:
       folder: /rules/fake
+    resources:
+      requests:
+        cpu: 10m
+        memory: 96Mi
+      limits:
+        memory: 128Mi
 
   singleBinary:
     replicas: 1
@@ -54,7 +60,7 @@ loki:
     resources:
       requests:
         cpu: 100m
-        memory: 256Mi
+        memory: 320Mi
       limits:
         memory: 1Gi
 

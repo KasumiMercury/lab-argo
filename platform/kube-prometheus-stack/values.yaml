@@ -30,6 +30,13 @@ kube-prometheus-stack:
       ruleSelectorNilUsesHelmValues: false
       probeSelectorNilUsesHelmValues: false
       retention: 15d
+      # Peak ~1Gi; WAL replay at startup and compaction need headroom over the steady state
+      resources:
+        requests:
+          cpu: 50m
+          memory: 1280Mi
+        limits:
+          memory: 2Gi
       additionalScrapeConfigs:
         - job_name: kube-etcd
           static_configs:
@@ -56,6 +63,13 @@ kube-prometheus-stack:
     alertmanagerSpec:
       secrets:
         - alertmanager-slack
+      # The chart's default request is 200Mi; it uses ~30Mi
+      resources:
+        requests:
+          cpu: 10m
+          memory: 64Mi
+        limits:
+          memory: 128Mi
     config:
       route:
         group_by: [alertname, namespace, node, container]
@@ -98,6 +112,20 @@ kube-prometheus-stack:
                 {{ end }}
 
   grafana:
+    resources:
+      requests:
+        cpu: 20m
+        memory: 768Mi
+      limits:
+        memory: 1Gi
+    # Shared by the dashboard and datasource sidecars
+    sidecar:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 96Mi
+        limits:
+          memory: 128Mi
     admin:
       # Delivered by templates/grafana-admin.sealedsecret.yaml (task seal:grafana)
       existingSecret: grafana-admin
@@ -121,3 +149,25 @@ kube-prometheus-stack:
         url: http://loki.logging.svc:3100
         jsonData:
           maxLines: 1000
+
+  prometheusOperator:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+  kube-state-metrics:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+  prometheus-node-exporter:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 64Mi
