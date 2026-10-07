@@ -7,7 +7,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "1m",
   "time": {
     "from": "now-6h",
@@ -36,7 +36,7 @@
       "gridPos": {
         "x": 0,
         "y": 0,
-        "w": 4,
+        "w": 3,
         "h": 4
       },
       "targets": [
@@ -103,9 +103,9 @@
         "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 4,
+        "x": 3,
         "y": 0,
-        "w": 4,
+        "w": 3,
         "h": 4
       },
       "targets": [
@@ -137,6 +137,50 @@
       }
     },
     {
+      "id": 15,
+      "title": "Last client request",
+      "description": "Time since CouchDB last served an HTTP request, looked back up to 1 day. Probes are TCP and the metrics port is separate, so only real clients move it. Grows steadily while no Obsidian client is syncing.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "A",
+          "expr": "time() - max(max_over_time((timestamp(couchdb_httpd_requests_total{namespace=\"obsidian-livesync\"}) and on () (increase(couchdb_httpd_requests_total{namespace=\"obsidian-livesync\"}[2m]) > 0))[1d:1m]))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "> 1 day"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "none"
+      }
+    },
+    {
       "id": 3,
       "title": "Volume used",
       "type": "gauge",
@@ -145,7 +189,7 @@
         "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 8,
+        "x": 10,
         "y": 0,
         "w": 4,
         "h": 4
@@ -198,16 +242,16 @@
     },
     {
       "id": 4,
-      "title": "Continuous _changes clients",
+      "title": "Live _changes clients",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 12,
+        "x": 14,
         "y": 0,
-        "w": 4,
+        "w": 3,
         "h": 4
       },
       "targets": [
@@ -234,7 +278,8 @@
           ]
         },
         "colorMode": "none"
-      }
+      },
+      "description": "Clients holding a continuous or longpoll _changes feed. Stays at 0 while syncing when the LiveSync client is in periodic or on-save mode, because those modes poll _changes once per sync."
     },
     {
       "id": 5,
@@ -245,9 +290,9 @@
         "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 16,
+        "x": 17,
         "y": 0,
-        "w": 4,
+        "w": 3,
         "h": 4
       },
       "targets": [
@@ -434,8 +479,17 @@
             "uid": "${datasource}"
           },
           "refId": "A",
-          "expr": "couchdb_request_time_seconds{namespace=\"obsidian-livesync\", quantile=~\"0.5|0.9|0.99\"}",
+          "expr": "couchdb_request_time_seconds{namespace=\"obsidian-livesync\", quantile=~\"0.5|0.9|0.99\"} > 0",
           "legendFormat": "p{{quantile}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "B",
+          "expr": "rate(couchdb_request_time_seconds_sum{namespace=\"obsidian-livesync\"}[$__rate_interval]) / rate(couchdb_request_time_seconds_count{namespace=\"obsidian-livesync\"}[$__rate_interval])",
+          "legendFormat": "average"
         }
       ],
       "fieldConfig": {
@@ -454,7 +508,8 @@
           "mode": "multi",
           "sort": "desc"
         }
-      }
+      },
+      "description": "CouchDB computes these quantiles over a short sliding window, so they drop to 0 between syncs and a 30s scrape catches only part of a burst. Zeros are hidden; the average from _sum/_count covers every request."
     },
     {
       "id": 10,
@@ -694,8 +749,17 @@
             "uid": "${datasource}"
           },
           "refId": "A",
-          "expr": "couchdb_fsync_time_seconds{namespace=\"obsidian-livesync\", quantile=~\"0.5|0.99\"}",
+          "expr": "couchdb_fsync_time_seconds{namespace=\"obsidian-livesync\", quantile=~\"0.5|0.99\"} > 0",
           "legendFormat": "p{{quantile}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "refId": "B",
+          "expr": "rate(couchdb_fsync_time_seconds_sum{namespace=\"obsidian-livesync\"}[$__rate_interval]) / rate(couchdb_fsync_count_total{namespace=\"obsidian-livesync\"}[$__rate_interval])",
+          "legendFormat": "average"
         }
       ],
       "fieldConfig": {
@@ -714,7 +778,8 @@
           "mode": "multi",
           "sort": "desc"
         }
-      }
+      },
+      "description": "Same sliding-window quantiles as Request latency: zeros are hidden and the average covers every fsync."
     }
   ]
 }
