@@ -51,10 +51,12 @@ groups:
           dashboard: "https://grafana.tail4a681d.ts.net/d/logs-overview/logs-overview?var-namespace=kube-system&var-container=coredns"
 
       - alert: KubeSystemWarningEvents
-        # Warning events of the system Pods (BackOff, Unhealthy, FailedMount, ...)
+        # Warning events of the system Pods (BackOff, Unhealthy, FailedMount, ...). Startup probe failures are
+        # left out: a slow start within the probe's failureThreshold is what the probe is for, and every Cilium
+        # rollout produces dozens of them from cilium-envoy
         expr: |
           sum by (kind, name, reason) (
-            count_over_time({job="kubernetes-events", namespace="kube-system"} |= "type=Warning" | logfmt [10m])
+            count_over_time({job="kubernetes-events", namespace="kube-system"} |= "type=Warning" != "Startup probe failed" | logfmt [10m])
           ) > 3
         for: 5m
         labels:
