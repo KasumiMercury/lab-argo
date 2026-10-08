@@ -18,6 +18,8 @@ argo-cd:
             config:
               clientID: $argocd-dex-github:clientID
               clientSecret: $argocd-dex-github:clientSecret
+      # GitHub (Dex) is the only login; the local admin account is off
+      admin.enabled: false
       # Report Application health so that sync waves in the app-of-apps wait for each component.
       # https://argo-cd.readthedocs.io/en/stable/operator-manual/health/#argocd-app
       resource.customizations.health.argoproj.io_Application: |
