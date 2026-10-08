@@ -32,6 +32,8 @@ components:
     finalizer: false
     syncOptions:
       - ServerSideApply=true
+    namespaceLabels:
+      pod-security.kubernetes.io/enforce: restricted
   sealed-secrets:
     namespace: kube-system
     releaseName: sealed-secrets
@@ -94,6 +96,8 @@ components:
     finalizer: true
     syncOptions:
       - SkipDryRunOnMissingResource=true
+    namespaceLabels:
+      pod-security.kubernetes.io/enforce: restricted
   external-dns:
     namespace: external-dns
     releaseName: external-dns
@@ -101,6 +105,8 @@ components:
     finalizer: true
     syncOptions:
       - SkipDryRunOnMissingResource=true
+    namespaceLabels:
+      pod-security.kubernetes.io/enforce: restricted
   ceph-csi-rbd:
     namespace: ceph-csi-rbd
     releaseName: ceph-csi-rbd
@@ -130,6 +136,9 @@ components:
     namespaceLabels:
       # HTTPRoutes here may attach to the public Gateway (platform/public-gateway)
       lab.mercuryksm.net/public-gateway: "true"
+      # CouchDB runs as root
+      pod-security.kubernetes.io/enforce: baseline
+      pod-security.kubernetes.io/warn: restricted
     syncOptions:
       - SkipDryRunOnMissingResource=true
   vaultwarden:
@@ -139,3 +148,7 @@ components:
     finalizer: true
     syncOptions:
       - SkipDryRunOnMissingResource=true
+    namespaceLabels:
+      # The backup Job runs as root with DAC_OVERRIDE to read the data written by the server (NFS no_root_squash)
+      pod-security.kubernetes.io/enforce: baseline
+      pod-security.kubernetes.io/warn: restricted
