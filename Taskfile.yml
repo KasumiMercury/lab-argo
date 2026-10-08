@@ -177,6 +177,25 @@ tasks:
         sed -i "s/^tunnelID: .*/tunnelID: \"$TUNNEL_ID\"/" {{.VALUES}}
         echo "sealed public-gateway/cloudflared-credentials -> {{.OUTPUT}}, tunnelID $TUNNEL_ID -> {{.VALUES}}"
 
+  seal:argocd-github:
+    desc: Seal the GitHub OAuth App Argo CD's Dex logs in with (GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET, prompted when unset; callback https://argocd.<tailnet>.ts.net/api/dex/callback)
+    interactive: true
+    vars:
+      OUTPUT: platform/argocd/templates/dex-github.sealedsecret.yaml
+    cmds:
+      - mkdir -p {{dir .OUTPUT}}
+      - |
+        [ -n "${GITHUB_CLIENT_ID:-}" ] || { printf 'GitHub OAuth client ID: '; read -r GITHUB_CLIENT_ID; }
+        [ -n "${GITHUB_CLIENT_SECRET:-}" ] || { printf 'GitHub OAuth client secret: '; stty -echo; read -r GITHUB_CLIENT_SECRET; stty echo; echo; }
+        export GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET
+        # Argo CD resolves $<secret>:<key> in argocd-cm only from Secrets labelled part-of=argocd
+        yq -n '.apiVersion = "v1" | .kind = "Secret"
+          | .metadata.name = "argocd-dex-github" | .metadata.namespace = "argocd"
+          | .metadata.labels."app.kubernetes.io/part-of" = "argocd"
+          | .stringData.clientID = strenv(GITHUB_CLIENT_ID) | .stringData.clientSecret = strenv(GITHUB_CLIENT_SECRET)' \
+          | kubeseal --format yaml > {{.OUTPUT}}
+      - echo "sealed argocd/argocd-dex-github -> {{.OUTPUT}}"
+
   seal:external-dns:
     desc: Seal the Cloudflare API token for external-dns (CF_API_TOKEN, prompted when unset; Zone:Zone:Read + Zone:DNS:Edit on mercuryksm.net)
     interactive: true

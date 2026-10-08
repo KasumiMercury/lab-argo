@@ -1,0 +1,19 @@
+# Every Application uses the default project. Limit it to the repositories the Applications in apps/ read and
+# to this cluster, so that an Application cannot pull from anywhere else or deploy to another cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: {{ .Release.Namespace }}
+spec:
+  sourceRepos:
+    - https://github.com/KasumiMercury/lab-argo.git
+    # apps/templates/cilium.yaml and gateway-api.yaml (pins in cilium/version.yaml, cilium/gateway-api.yaml)
+    - https://helm.cilium.io
+    - https://github.com/kubernetes-sigs/gateway-api.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"

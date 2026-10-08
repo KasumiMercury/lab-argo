@@ -5,6 +5,19 @@ argo-cd:
       # Keep in step with argocd_helm_values in lab-proxmox (ansible/roles/argocd/defaults/main.yml)
       server.insecure: true
     cm:
+      # Dex's callback URL is built from this: register https://argocd.tail4a681d.ts.net/api/dex/callback as the
+      # GitHub OAuth App's callback
+      url: https://argocd.tail4a681d.ts.net
+      # Log in with GitHub through the bundled Dex. The client comes from the sealed argocd-dex-github Secret
+      # (task seal:argocd-github). Any GitHub account can authenticate; RBAC below grants roles by login.
+      dex.config: |
+        connectors:
+          - type: github
+            id: github
+            name: GitHub
+            config:
+              clientID: $argocd-dex-github:clientID
+              clientSecret: $argocd-dex-github:clientSecret
       # Report Application health so that sync waves in the app-of-apps wait for each component.
       # https://argo-cd.readthedocs.io/en/stable/operator-manual/health/#argocd-app
       resource.customizations.health.argoproj.io_Application: |
@@ -21,6 +34,12 @@ argo-cd:
         end
         return hs
     # CiliumIdentity/CiliumEndpoint are already in the chart's default resource.exclusions
+    rbac:
+      # Only these GitHub logins get a role; everyone else who authenticates sees nothing
+      policy.default: ""
+      policy.csv: |
+        g, KasumiMercury, role:admin
+      scopes: "[preferred_username]"
 
   # From the observed peaks (application-controller ~840Mi, repo-server ~200Mi while rendering)
   controller:
