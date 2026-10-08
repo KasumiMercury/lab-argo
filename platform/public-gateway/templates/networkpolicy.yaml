@@ -38,6 +38,11 @@ spec:
         - ports:
             - port: "80"
               protocol: TCP
+    # The Gateway's Envoy checks cloudflared's egress again for the hop to the backend, which it opens to the
+    # backend Service's ClusterIP. cloudflared's own connections to a ClusterIP are matched against the
+    # selected pod instead, so this does not open any Service to it directly.
+    - toCIDR:
+        - {{ .Values.serviceCIDR }}
     # Tunnel connections to Cloudflare's edge (HTTP/2 or QUIC); never to the LAN
     - toCIDRSet:
         - cidr: 0.0.0.0/0
