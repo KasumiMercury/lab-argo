@@ -25,5 +25,10 @@ spec:
     namespace: {{ $c.namespace }}
   syncPolicy:
     {{- include "apps.syncPolicy" (dict "syncOptions" $c.syncOptions) | nindent 4 }}
+    {{- with $c.namespaceLabels }}
+    managedNamespaceMetadata:
+      labels:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
 {{- end }}
 {{- end }}

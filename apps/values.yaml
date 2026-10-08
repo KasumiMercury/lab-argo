@@ -21,6 +21,7 @@ gatewayAPI:
 #   syncWave:    order relative to the other Applications (needs the Application health check in argocd)
 #   finalizer:   delete the component's resources when its Application is deleted
 #   syncOptions: extra sync options added to CreateNamespace=true
+#   namespaceLabels: labels Argo CD keeps on the namespace (only for a namespace no other component uses)
 components:
   argocd:
     namespace: argocd
@@ -126,6 +127,9 @@ components:
     releaseName: obsidian-livesync
     syncWave: "2"
     finalizer: true
+    namespaceLabels:
+      # HTTPRoutes here may attach to the public Gateway (platform/public-gateway)
+      lab.mercuryksm.net/public-gateway: "true"
     syncOptions:
       - SkipDryRunOnMissingResource=true
   vaultwarden:
