@@ -13,12 +13,7 @@ metadata:
     external-dns.kubernetes.io/target: {{ .Values.tunnelID }}.cfargotunnel.com
   {{- end }}
 spec:
-  gatewayClassName: cilium
-  infrastructure:
-    parametersRef:
-      group: cilium.io
-      kind: CiliumGatewayClassConfig
-      name: public
+  gatewayClassName: cilium-public
   listeners:
     - name: http
       protocol: HTTP
@@ -31,7 +26,20 @@ spec:
               {{ .Values.allowedRoutesLabel }}: "true"
 ---
 # cloudflared is the only intended client. Without NodePorts the Service is not reachable from the LAN on
-# every node's address, which would bypass Cloudflare.
+# every node's address, which would bypass Cloudflare. Cilium reads this only from a GatewayClass
+# (a Gateway's spec.infrastructure.parametersRef is rejected as unsupported).
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: cilium-public
+spec:
+  controllerName: io.cilium/gateway-controller
+  parametersRef:
+    group: cilium.io
+    kind: CiliumGatewayClassConfig
+    name: public
+    namespace: {{ .Release.Namespace }}
+---
 apiVersion: cilium.io/v2alpha1
 kind: CiliumGatewayClassConfig
 metadata:
