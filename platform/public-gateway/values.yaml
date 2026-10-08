@@ -7,9 +7,6 @@ tunnelID: "9efda141-fb63-4300-81e2-74a684d7e6ce"
 # Anything published this way has no Cloudflare Access unless one is created for its hostname.
 allowedRoutesLabel: lab.mercuryksm.net/public-gateway
 
-# Service CIDR of the cluster (service_subnet in lab-proxmox terraform/environments/k8s)
-serviceCIDR: 10.152.183.0/24
-
 # Cilium LB IPAM range for the Gateway's LoadBalancer Service. Only reached from inside the cluster (cloudflared),
 # not announced on the LAN. Must not overlap the pod CIDR (10.1.0.0/16), the Service CIDR (10.152.183.0/24) or
 # the LAN (192.168.0.0/16).
