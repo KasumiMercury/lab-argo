@@ -1,0 +1,52 @@
+# Default deny for the namespace: CouchDB is reached only through the public Gateway and by Prometheus,
+# and makes no outbound connections.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: default-deny
+spec:
+  endpointSelector: {}
+  enableDefaultDeny:
+    ingress: true
+    egress: true
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: ANY
+          rules:
+            dns:
+              - matchPattern: "*"
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: couchdb
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: couchdb
+  ingress:
+    # The Gateway's Envoy (reserved identity "ingress"). The empty HTTP rule allows every request and only
+    # makes Envoy parse it for Hubble's L7 metrics.
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "5984"
+              protocol: TCP
+          rules:
+            http:
+              - {}
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "17986"
+              protocol: TCP

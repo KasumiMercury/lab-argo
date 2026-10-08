@@ -11,11 +11,6 @@ cluster: lab
 #   matchLabels: pod labels
 #   ports:       container ports that speak HTTP
 l7Visibility:
-  - name: couchdb
-    namespace: obsidian-livesync
-    matchLabels:
-      app.kubernetes.io/name: couchdb
-    ports: [5984]
   - name: grafana
     namespace: monitoring
     matchLabels:
