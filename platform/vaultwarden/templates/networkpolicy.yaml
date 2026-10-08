@@ -9,6 +9,10 @@ spec:
   enableDefaultDeny:
     ingress: true
     egress: true
+  # An empty rule turns ingress enforcement on for pods that no other rule gives an ingress section
+  # (enableDefaultDeny alone leaves it off)
+  ingress:
+    - {}
   egress:
     - toEndpoints:
         - matchLabels:
