@@ -4,3 +4,8 @@ kubectl = "latest"
 kubeseal = "latest"
 sops = "3.13.3"
 yq = "latest"
+
+[env]
+# Helm repositories of this project only, apart from the user's global ones (same as Taskfile.yml)
+HELM_REPOSITORY_CONFIG = "{{config_root}}/.helm/repositories.yaml"
+HELM_REPOSITORY_CACHE = "{{config_root}}/.helm/repository"

@@ -7,4 +7,4 @@ dependencies:
   # The OSS chart moved to grafana-community; grafana/loki 7.x is the Enterprise Logs chart
   - name: loki
     version: 18.15.1
-    repository: https://grafana-community.github.io/helm-charts
+    repository: oci://ghcr.io/grafana-community/helm-charts
