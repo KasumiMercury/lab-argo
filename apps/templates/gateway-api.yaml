@@ -10,6 +10,9 @@ kind: Application
 metadata:
   name: gateway-api
   namespace: argocd
+  labels:
+    lab.mercuryksm.net/group: platform
+    lab.mercuryksm.net/source: directory
   annotations:
     argocd.argoproj.io/sync-wave: {{ .Values.gatewayAPI.syncWave | quote }}
   # No resources finalizer: deleting the Application must not delete the CRDs (and every route with them)

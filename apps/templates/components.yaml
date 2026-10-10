@@ -7,6 +7,9 @@ kind: Application
 metadata:
   name: {{ $name }}
   namespace: argocd
+  labels:
+    lab.mercuryksm.net/group: {{ $group }}
+    lab.mercuryksm.net/source: {{ if $c.releaseName }}helm{{ else }}kustomize{{ end }}
   annotations:
     argocd.argoproj.io/sync-wave: {{ $c.syncWave | default "0" | quote }}
   {{- if $c.finalizer }}

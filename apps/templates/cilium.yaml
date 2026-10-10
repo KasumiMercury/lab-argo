@@ -10,6 +10,9 @@ kind: Application
 metadata:
   name: cilium
   namespace: argocd
+  labels:
+    lab.mercuryksm.net/group: platform
+    lab.mercuryksm.net/source: helm
   annotations:
     argocd.argoproj.io/sync-wave: {{ .Values.cilium.syncWave | quote }}
   # No resources finalizer: deleting the Application must not remove the CNI (cilium/README.md)

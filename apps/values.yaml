@@ -19,7 +19,8 @@ gatewayAPI:
 #   services: applications that run on the platform (services/<name>)
 # A component that deploys an upstream chart is an umbrella Helm chart whose Chart.yaml/Chart.lock pin it; one made
 # of our own manifests only is a kustomization (render either locally with `task render APP=<name>`).
-# Names must be unique across both groups.
+# Names must be unique across both groups. Each Application is labelled lab.mercuryksm.net/group (platform/services)
+# and lab.mercuryksm.net/source (helm/kustomize) for the filters of the Argo CD UI.
 #   namespace:   destination namespace (created when missing)
 #   releaseName: Helm release name, for Helm charts only; keep it stable, resource names depend on it
 #   syncWave:    order relative to the other Applications (needs the Application health check in argocd)
