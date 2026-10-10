@@ -14,15 +14,18 @@ gatewayAPI:
   enabled: true
   syncWave: "-4"
 
-# Platform components. Each one is an umbrella Helm chart under platform/<name> whose
-# Chart.yaml/Chart.lock pin the upstream chart (render locally with `task render APP=<name>`).
+# Components, grouped like the directories holding their charts:
+#   platform: cluster-wide infrastructure the services build on (platform/<name>)
+#   services: applications that run on the platform (services/<name>)
+# Each one is an umbrella Helm chart whose Chart.yaml/Chart.lock pin the upstream chart
+# (render locally with `task render APP=<name>`). Names must be unique across both groups.
 #   namespace:   destination namespace (created when missing)
 #   releaseName: Helm release name; keep it stable, resource names depend on it
 #   syncWave:    order relative to the other Applications (needs the Application health check in argocd)
 #   finalizer:   delete the component's resources when its Application is deleted
 #   syncOptions: extra sync options added to CreateNamespace=true
 #   namespaceLabels: labels Argo CD keeps on the namespace (only for a namespace no other component uses)
-components:
+platform:
   argocd:
     namespace: argocd
     # Must match the release installed by the Ansible bootstrap (lab-proxmox roles/argocd)
@@ -128,6 +131,8 @@ components:
     finalizer: true
     syncOptions:
       - SkipDryRunOnMissingResource=true
+
+services:
   obsidian-livesync:
     namespace: obsidian-livesync
     releaseName: obsidian-livesync

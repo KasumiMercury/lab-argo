@@ -5,9 +5,13 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 
 ## Layout
 - `bootstrap/root.yaml`: root Application (app-of-apps). Applied once by hand
-- `apps/`: Helm chart that renders one Application per component (`values.yaml` lists them with namespace, release name, sync wave)
-- `platform/<component>/`: umbrella Helm chart per component. `Chart.yaml` + `Chart.lock` pin the upstream chart, `values.yaml` configures it under the dependency name, `templates/` holds extra manifests (SealedSecrets)
+- `apps/`: Helm chart that renders one Application per component (`values.yaml` lists them under `platform` and `services` with namespace, release name, sync wave)
+- `platform/<component>/`: cluster-wide infrastructure the services rely on (GitOps, secrets, storage, networking, observability)
+- `services/<component>/`: applications that run on the platform
+- Each component directory is an umbrella Helm chart. `Chart.yaml` + `Chart.lock` pin the upstream chart, `values.yaml` configures it under the dependency name, `templates/` holds extra manifests (SealedSecrets)
 - `cilium/`: git submodule of [lab-cilium](https://github.com/KasumiMercury/lab-cilium), the Cilium chart pin (`version.yaml`) and values shared with the lab-proxmox bootstrap; see `cilium/README.md`. `apps/cilium` is a symlink to it so the app-of-apps chart can read the pin. Clone with `git clone --recurse-submodules` (or run `git submodule update --init`)
+
+### Platform
 
 | Application | Chart | Namespace | Wave |
 |---|---|---|---|
@@ -27,6 +31,11 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 | ceph-csi-rbd | ceph-csi-rbd 3.18.1 + StorageClass `ceph-rbd` (default; Proxmox Ceph, pool `k8s`, Retain), VolumeSnapshotClass `ceph-rbd` | ceph-csi-rbd | 0 |
 | coredns | PodDisruptionBudget (`minAvailable: 1`) for the CoreDNS installed by Talos; its spread across nodes is set by the lab-proxmox bootstrap | kube-system | 0 |
 | cilium-monitoring | PodMonitors for the Cilium agent, operator, Envoy and Hubble (dashboards come with the cilium chart), HTTP visibility policies (`l7Visibility`) | kube-system | 2 |
+
+### Services
+
+| Application | Chart | Namespace | Wave |
+|---|---|---|---|
 | obsidian-livesync | CouchDB 3.5.2 for Obsidian Self-hosted LiveSync, `talaria.mercuryksm.net` | obsidian-livesync | 2 |
 | vaultwarden | Vaultwarden 1.37.4 (SQLite on a 2Gi `ceph-rbd` volume), tailnet only at `https://vault.<tailnet>.ts.net`; daily backup to the NAS (`vaultwarden-backup` on `/nfs/k8s`, 30 days) | vaultwarden | 2 |
 
@@ -50,10 +59,10 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
    - `task seal:external-dns` → `platform/external-dns/templates/cloudflare-api-token.sealedsecret.yaml` (API token with Zone:Zone:Read and Zone:DNS:Edit on mercuryksm.net)
    - Commit and push. cloudflared is deployed and the Gateway gets the tunnel as its DNS target only once `tunnelID` is set
 5. Ceph RBD volumes (`ceph-rbd`): on a Proxmox host create the pool and the client once (commands in `platform/ceph-csi-rbd/values.yaml`), then `task seal:ceph-csi` (`CEPH_USER_KEY=$(ssh root@<host> ceph auth get-key client.k8s)`). The k8s nodes must reach the mons and OSDs (192.168.20.0/24, TCP 3300/6789/6800-7300)
-6. `task seal:couchdb` → `platform/obsidian-livesync/templates/couchdb-admin.sealedsecret.yaml` (CouchDB admin for LiveSync)
+6. `task seal:couchdb` → `services/obsidian-livesync/templates/couchdb-admin.sealedsecret.yaml` (CouchDB admin for LiveSync)
 7. Vaultwarden (see [Vaultwarden](#vaultwarden)):
    - In the tailnet policy, let the operator own `tag:vaultwarden` (`"tag:vaultwarden": ["tag:k8s-operator"]` in `tagOwners`) and grant `tcp:443` on it to the users who need the vault only
-   - `docker run --rm -it vaultwarden/server /vaultwarden hash --preset owasp`, then `task seal:vaultwarden` with the printed `ADMIN_TOKEN` → `platform/vaultwarden/templates/admin-token.sealedsecret.yaml`. Until then `/admin` is disabled
+   - `docker run --rm -it vaultwarden/server /vaultwarden hash --preset owasp`, then `task seal:vaultwarden` with the printed `ADMIN_TOKEN` → `services/vaultwarden/templates/admin-token.sealedsecret.yaml`. Until then `/admin` is disabled
 
 ## Reproducing what Argo CD renders
 Tools are pinned in `mise.toml` (`mise install`).
@@ -63,7 +72,7 @@ Tools are pinned in `mise.toml` (`mise install`).
 - `task lint`: lint and render everything (run before pushing)
 
 ## Upgrading a component
-1. Change the dependency `version` in `platform/<component>/Chart.yaml`
+1. Change the dependency `version` in `platform/<component>/Chart.yaml` (or `services/<component>/Chart.yaml`)
 2. `task deps:update APP=<component>` to rewrite `Chart.lock`
 3. `task render APP=<component>` to review the result, then commit
 

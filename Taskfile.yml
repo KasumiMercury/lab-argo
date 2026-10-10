@@ -3,8 +3,9 @@
 version: '3'
 
 vars:
-  COMPONENTS:
-    sh: ls platform
+  # Chart directory of every component (platform/<name> and services/<name>)
+  COMPONENT_DIRS:
+    sh: ls -d platform/* services/*
   # kubeconfig written by the lab-proxmox playbook (override with KUBECONFIG=...)
   KUBECONFIG: '{{.KUBECONFIG | default "../lab-proxmox/ansible/artifacts/k8s.kubeconfig"}}'
 
@@ -22,7 +23,7 @@ tasks:
     run: once
     cmds:
       - |
-        for chart in platform/*/Chart.yaml; do
+        for chart in platform/*/Chart.yaml services/*/Chart.yaml; do
           yq '.dependencies[] | .name + " " + .repository' "$chart"
         done | sort -u | while read -r name url; do
           helm repo add "$name" "$url" --force-update >/dev/null
@@ -32,15 +33,18 @@ tasks:
     desc: Download the pinned chart dependencies of every component (from Chart.lock)
     deps: [repos]
     cmds:
-      - for: { var: COMPONENTS }
-        cmd: helm dependency build platform/{{.ITEM}}
+      - for: { var: COMPONENT_DIRS }
+        cmd: helm dependency build {{.ITEM}}
 
   deps:update:
     desc: Re-resolve dependencies and rewrite Chart.lock after changing a version in Chart.yaml (APP=<component>)
     requires:
       vars: [APP]
+    vars:
+      DIR:
+        sh: find platform services -mindepth 1 -maxdepth 1 -name '{{.APP}}'
     cmds:
-      - helm dependency update platform/{{.APP}}
+      - helm dependency update {{.DIR}}
 
   render:
     desc: Render a component exactly as Argo CD does (APP=<component>)
@@ -48,13 +52,15 @@ tasks:
     requires:
       vars: [APP]
     vars:
+      DIR:
+        sh: find platform services -mindepth 1 -maxdepth 1 -name '{{.APP}}'
       RELEASE:
-        sh: yq '.components["{{.APP}}"].releaseName' apps/values.yaml
+        sh: yq '(.platform, .services) | .["{{.APP}}"] | select(.) | .releaseName' apps/values.yaml
       NAMESPACE:
-        sh: yq '.components["{{.APP}}"].namespace' apps/values.yaml
+        sh: yq '(.platform, .services) | .["{{.APP}}"] | select(.) | .namespace' apps/values.yaml
     cmds:
-      - helm dependency build platform/{{.APP}} >/dev/null
-      - helm template {{.RELEASE}} platform/{{.APP}} --namespace {{.NAMESPACE}} --include-crds
+      - helm dependency build {{.DIR}} >/dev/null
+      - helm template {{.RELEASE}} {{.DIR}} --namespace {{.NAMESPACE}} --include-crds
 
   render:cilium:
     desc: Render Cilium with the pin and values of the shared cilium/ directory
@@ -79,17 +85,20 @@ tasks:
     cmds:
       - helm lint apps --quiet
       - helm template apps apps >/dev/null
-      - for: { var: COMPONENTS }
+      - for: { var: COMPONENT_DIRS }
         task: lint:component
         vars:
-          APP: '{{.ITEM}}'
+          APP: '{{base .ITEM}}'
       - task render:cilium >/dev/null
 
   lint:component:
     internal: true
+    vars:
+      DIR:
+        sh: find platform services -mindepth 1 -maxdepth 1 -name '{{.APP}}'
     cmds:
-      - helm dependency build platform/{{.APP}} >/dev/null
-      - helm lint platform/{{.APP}} --quiet
+      - helm dependency build {{.DIR}} >/dev/null
+      - helm lint {{.DIR}} --quiet
       - task render APP={{.APP}} >/dev/null
 
   bootstrap:
@@ -232,7 +241,7 @@ tasks:
     desc: Seal the CouchDB admin for Obsidian LiveSync (COUCHDB_USER default admin, COUCHDB_PASSWORD prompted when unset)
     interactive: true
     vars:
-      OUTPUT: platform/obsidian-livesync/templates/couchdb-admin.sealedsecret.yaml
+      OUTPUT: services/obsidian-livesync/templates/couchdb-admin.sealedsecret.yaml
     cmds:
       - mkdir -p {{dir .OUTPUT}}
       - |
@@ -249,7 +258,7 @@ tasks:
     desc: Seal the Vaultwarden ADMIN_TOKEN (VAULTWARDEN_ADMIN_TOKEN = Argon2id PHC string, prompted when unset; make it with `docker run --rm -it vaultwarden/server /vaultwarden hash --preset owasp`)
     interactive: true
     vars:
-      OUTPUT: platform/vaultwarden/templates/admin-token.sealedsecret.yaml
+      OUTPUT: services/vaultwarden/templates/admin-token.sealedsecret.yaml
     cmds:
       - mkdir -p {{dir .OUTPUT}}
       - |
