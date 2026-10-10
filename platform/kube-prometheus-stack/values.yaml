@@ -148,7 +148,8 @@ kube-prometheus-stack:
         root_url: https://grafana.tail4a681d.ts.net
       auth.github:
         enabled: true
-        scopes: user:email
+        # read:org: Grafana lists the user's teams on every login and fails (404) without it
+        scopes: user:email,read:org
         role_attribute_path: "id == `88318012` && 'Admin' || ''"
         role_attribute_strict: true
     # Reachable on the tailnet as https://grafana.<tailnet>.ts.net
