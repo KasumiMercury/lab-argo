@@ -3,7 +3,7 @@ helm = "4.3.0"
 kubectl = "latest"
 kubeseal = "latest"
 # Same version as the one Argo CD's repo-server builds kustomizations with (`kustomize version` in argocd-repo-server)
-kustomize = "5.8.1"
+kustomize = "5.8.3"
 sops = "3.13.3"
 yq = "latest"
 
