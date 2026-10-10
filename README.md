@@ -11,33 +11,35 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 - Each component directory is an umbrella Helm chart. `Chart.yaml` + `Chart.lock` pin the upstream chart, `values.yaml` configures it under the dependency name, `templates/` holds extra manifests (SealedSecrets)
 - `cilium/`: git submodule of [lab-cilium](https://github.com/KasumiMercury/lab-cilium), the Cilium chart pin (`version.yaml`) and values shared with the lab-proxmox bootstrap; see `cilium/README.md`. `apps/cilium` is a symlink to it so the app-of-apps chart can read the pin. Clone with `git clone --recurse-submodules` (or run `git submodule update --init`)
 
+Versions are not listed here: each component pins them in its `Chart.yaml`/`Chart.lock` (images in `values.yaml`), Cilium and the Gateway API CRDs in `cilium/`.
+
 ### Platform
 
-| Application | Chart | Namespace | Wave |
+| Application | Contents | Namespace | Wave |
 |---|---|---|---|
-| gateway-api | Gateway API CRDs v1.6.1 (from `cilium/gateway-api.yaml`) | (cluster) | -4 |
-| cilium | cilium 1.20.1 (from `cilium/version.yaml`) | kube-system | -3 |
-| argocd | argo-cd 10.8.1 (Argo CD v3.5.2) | argocd | -2 |
-| sealed-secrets | sealed-secrets 2.20.0 | kube-system | -1 |
-| snapshot-controller | snapshot-controller 5.3.0 (piraeus; external-snapshotter v8.6.0 CRDs and controller) | kube-system | -2 |
-| csi-driver-nfs | csi-driver-nfs 4.13.4 + StorageClass `nfs-csi`, VolumeSnapshotClass `nfs-csi` | kube-system | -1 |
-| tailscale | tailscale-operator 1.102.4 | tailscale | 0 |
-| kube-prometheus-stack | kube-prometheus-stack 91.9.0; Alertmanager sends the Loki ruler alerts and every warning/critical Prometheus alert to Slack #k8s-alert | monitoring | 1 |
-| loki | loki 18.13.7 (Loki 3.7.8, grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki`, dashboard `Logs overview`, ruler alerts on error spikes of the Kubernetes components and Cilium (`rules/k8s-alerts.yaml`) | logging | 1 |
-| alloy | alloy 1.13.0 (Alloy v1.20.0; one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`; drops recurring lines that never need action) | logging | 2 |
-| alloy-talos | alloy 1.13.0 (hostNetwork DaemonSet receiving the Talos service and kernel logs on 127.0.0.1:6050/6051, `namespace="talos"`, `container=<service>`) | logging | 2 |
-| public-gateway | Gateway `public` (Cilium), LB IPAM pool, cloudflared 2026.9.3 | public-gateway | 0 |
-| external-dns | external-dns 1.23.0 (Cloudflare, mercuryksm.net) | external-dns | 1 |
-| ceph-csi-rbd | ceph-csi-rbd 3.18.1 + StorageClass `ceph-rbd` (default; Proxmox Ceph, pool `k8s`, Retain), VolumeSnapshotClass `ceph-rbd` | ceph-csi-rbd | 0 |
+| gateway-api | Gateway API CRDs (from `cilium/gateway-api.yaml`) | (cluster) | -4 |
+| cilium | cilium (from `cilium/version.yaml`) | kube-system | -3 |
+| argocd | argo-cd | argocd | -2 |
+| sealed-secrets | sealed-secrets | kube-system | -1 |
+| snapshot-controller | snapshot-controller (piraeus; external-snapshotter CRDs and controller) | kube-system | -2 |
+| csi-driver-nfs | csi-driver-nfs + StorageClass `nfs-csi`, VolumeSnapshotClass `nfs-csi` | kube-system | -1 |
+| tailscale | tailscale-operator | tailscale | 0 |
+| kube-prometheus-stack | kube-prometheus-stack; Alertmanager sends the Loki ruler alerts and every warning/critical Prometheus alert to Slack #k8s-alert | monitoring | 1 |
+| loki | loki (grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki`, dashboard `Logs overview`, ruler alerts on error spikes of the Kubernetes components and Cilium (`rules/k8s-alerts.yaml`) | logging | 1 |
+| alloy | alloy (one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`; drops recurring lines that never need action) | logging | 2 |
+| alloy-talos | alloy (hostNetwork DaemonSet receiving the Talos service and kernel logs on 127.0.0.1:6050/6051, `namespace="talos"`, `container=<service>`) | logging | 2 |
+| public-gateway | Gateway `public` (Cilium), LB IPAM pool, cloudflared | public-gateway | 0 |
+| external-dns | external-dns (Cloudflare, mercuryksm.net) | external-dns | 1 |
+| ceph-csi-rbd | ceph-csi-rbd + StorageClass `ceph-rbd` (default; Proxmox Ceph, pool `k8s`, Retain), VolumeSnapshotClass `ceph-rbd` | ceph-csi-rbd | 0 |
 | coredns | PodDisruptionBudget (`minAvailable: 1`) for the CoreDNS installed by Talos; its spread across nodes is set by the lab-proxmox bootstrap | kube-system | 0 |
 | cilium-monitoring | PodMonitors for the Cilium agent, operator, Envoy and Hubble (dashboards come with the cilium chart), HTTP visibility policies (`l7Visibility`) | kube-system | 2 |
 
 ### Services
 
-| Application | Chart | Namespace | Wave |
+| Application | Contents | Namespace | Wave |
 |---|---|---|---|
-| obsidian-livesync | CouchDB 3.5.2 for Obsidian Self-hosted LiveSync, `talaria.mercuryksm.net` | obsidian-livesync | 2 |
-| vaultwarden | Vaultwarden 1.37.4 (SQLite on a 2Gi `ceph-rbd` volume), tailnet only at `https://vault.<tailnet>.ts.net`; daily backup to the NAS (`vaultwarden-backup` on `/nfs/k8s`, 30 days) | vaultwarden | 2 |
+| obsidian-livesync | CouchDB for Obsidian Self-hosted LiveSync, `talaria.mercuryksm.net` | obsidian-livesync | 2 |
+| vaultwarden | Vaultwarden (SQLite on a 2Gi `ceph-rbd` volume), tailnet only at `https://vault.<tailnet>.ts.net`; daily backup to the NAS (`vaultwarden-backup` on `/nfs/k8s`, 30 days) | vaultwarden | 2 |
 
 - `argocd` and `cilium` have no resources finalizer: deleting their Application leaves Argo CD and the CNI running
 - `argocd` adopts the release installed by the lab-proxmox bootstrap, so its chart version must match `version` in lab-proxmox `kubernetes/argocd.yaml`

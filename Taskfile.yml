@@ -21,13 +21,25 @@ tasks:
   repos:
     desc: Register the Helm repositories referenced by the component charts (needed by helm dependency build)
     run: once
+    # Each URL must be registered under one name only. helm repo update refreshes a URL through one
+    # of its names, while helm dependency build may resolve it through another whose index is stale
+    # ("could not find : no matching version"). So a URL already registered is reused, and the task
+    # stops when one of the URLs is registered twice.
     cmds:
       - |
-        for chart in platform/*/Chart.yaml services/*/Chart.yaml; do
+        deps=$(for chart in platform/*/Chart.yaml services/*/Chart.yaml; do
           yq '.dependencies[] | .name + " " + .repository' "$chart"
-        done | sort -u | while read -r name url; do
-          helm repo add "$name" "$url" --force-update >/dev/null
+        done | sort -u)
+        registered=$(helm repo list -o yaml 2>/dev/null | yq '.[].url' || true)
+        echo "$deps" | while read -r name url; do
+          echo "$registered" | grep -qxF "$url" || helm repo add "$name" "$url" >/dev/null
         done
+        dups=$(helm repo list -o yaml | yq '.[].url' | sort | uniq -d | grep -xF "$(echo "$deps" | awk '{ print $2 }')" || true)
+        if [ -n "$dups" ]; then
+          echo "Helm repositories registered under more than one name (keep one, helm repo remove the others):" >&2
+          helm repo list | grep -F "$dups" >&2
+          exit 1
+        fi
 
   deps:
     desc: Download the pinned chart dependencies of every component (from Chart.lock)
