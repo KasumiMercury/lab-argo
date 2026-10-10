@@ -1,0 +1,90 @@
+# Single-node CouchDB for Self-hosted LiveSync (settings in files/livesync.ini).
+# Admin credentials: couchdb-admin.sealedsecret.yaml (task seal:couchdb).
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: couchdb
+spec:
+  serviceName: couchdb
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: couchdb
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: couchdb
+    spec:
+      securityContext:
+        fsGroup: 5984
+      # The image's entrypoint (set -e) chowns and chmods everything under /opt/couchdb and exits silently on a
+      # read-only ConfigMap mount. Copy the settings into local.d instead, on every start so Git stays the
+      # source. "00-" sorts before docker.ini, which stays the last file and takes the runtime config changes.
+      initContainers:
+        - name: config
+          image: couchdb
+          command: ["cp", "/config/livesync.ini", "/opt/couchdb/etc/local.d/00-livesync.ini"]
+          volumeMounts:
+            - name: data
+              mountPath: /opt/couchdb/etc/local.d
+              subPath: local.d
+            - name: config
+              mountPath: /config
+              readOnly: true
+      containers:
+        - name: couchdb
+          image: couchdb
+          env:
+            - name: COUCHDB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: couchdb-admin
+                  key: username
+            - name: COUCHDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: couchdb-admin
+                  key: password
+          ports:
+            - name: http
+              containerPort: 5984
+            - name: metrics
+              containerPort: 17986
+          # Every endpoint, /_up included, needs authentication (require_valid_user)
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /opt/couchdb/data
+              subPath: data
+            # The image writes the admin hash, the node uuid and the cookie secret to local.d/docker.ini on
+            # first start; keeping local.d on the volume keeps them across restarts (sessions, replication ids)
+            - name: data
+              mountPath: /opt/couchdb/etc/local.d
+              subPath: local.d
+      volumes:
+        - name: config
+          configMap:
+            name: couchdb
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: ceph-rbd
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi

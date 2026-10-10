@@ -17,10 +17,11 @@ gatewayAPI:
 # Components, grouped like the directories holding their charts:
 #   platform: cluster-wide infrastructure the services build on (platform/<name>)
 #   services: applications that run on the platform (services/<name>)
-# Each one is an umbrella Helm chart whose Chart.yaml/Chart.lock pin the upstream chart
-# (render locally with `task render APP=<name>`). Names must be unique across both groups.
+# A component that deploys an upstream chart is an umbrella Helm chart whose Chart.yaml/Chart.lock pin it; one made
+# of our own manifests only is a kustomization (render either locally with `task render APP=<name>`).
+# Names must be unique across both groups.
 #   namespace:   destination namespace (created when missing)
-#   releaseName: Helm release name; keep it stable, resource names depend on it
+#   releaseName: Helm release name, for Helm charts only; keep it stable, resource names depend on it
 #   syncWave:    order relative to the other Applications (needs the Application health check in argocd)
 #   finalizer:   delete the component's resources when its Application is deleted
 #   syncOptions: extra sync options added to CreateNamespace=true
@@ -94,7 +95,6 @@ platform:
       - SkipDryRunOnMissingResource=true
   public-gateway:
     namespace: public-gateway
-    releaseName: public-gateway
     syncWave: "0"
     finalizer: true
     syncOptions:
@@ -120,13 +120,11 @@ platform:
   coredns:
     # Only a PDB; the Deployment itself belongs to Talos
     namespace: kube-system
-    releaseName: coredns
     syncWave: "0"
     finalizer: true
   cilium-monitoring:
     # PodMonitors for the Cilium Application (the pods live in kube-system) and L7 visibility policies
     namespace: kube-system
-    releaseName: cilium-monitoring
     syncWave: "2"
     finalizer: true
     syncOptions:
@@ -135,7 +133,6 @@ platform:
 services:
   obsidian-livesync:
     namespace: obsidian-livesync
-    releaseName: obsidian-livesync
     syncWave: "2"
     finalizer: true
     namespaceLabels:
@@ -148,7 +145,6 @@ services:
       - SkipDryRunOnMissingResource=true
   vaultwarden:
     namespace: vaultwarden
-    releaseName: vaultwarden
     syncWave: "2"
     finalizer: true
     syncOptions:

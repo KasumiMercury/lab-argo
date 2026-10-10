@@ -3,9 +3,12 @@
 version: '3'
 
 vars:
-  # Chart directory of every component (platform/<name> and services/<name>)
+  # Directory of every component (platform/<name> and services/<name>)
   COMPONENT_DIRS:
     sh: ls -d platform/* services/*
+  # Components that are umbrella Helm charts (the others are kustomizations)
+  CHART_DIRS:
+    sh: find platform services -mindepth 2 -maxdepth 2 -name Chart.yaml -exec dirname {} \; | sort
   # kubeconfig written by the lab-proxmox playbook (override with KUBECONFIG=...)
   KUBECONFIG: '{{.KUBECONFIG | default "../lab-proxmox/ansible/artifacts/k8s.kubeconfig"}}'
 
@@ -29,7 +32,7 @@ tasks:
     cmds:
       - |
         registered=$(helm repo list -o yaml 2>/dev/null | yq '.[].url' || true)
-        for chart in platform/*/Chart.yaml services/*/Chart.yaml; do
+        for chart in $(find platform services -mindepth 2 -maxdepth 2 -name Chart.yaml); do
           yq '.dependencies[] | select(.repository | test("^oci://") | not) | .name + " " + .repository' "$chart"
         done | sort -u | while read -r name url; do
           echo "$registered" | grep -qxF "$url" && continue
@@ -42,7 +45,7 @@ tasks:
     desc: Download the pinned chart dependencies of every component (from Chart.lock)
     deps: [repos]
     cmds:
-      - for: { var: COMPONENT_DIRS }
+      - for: { var: CHART_DIRS }
         cmd: helm dependency build {{.ITEM}}
 
   deps:update:
@@ -68,8 +71,13 @@ tasks:
       NAMESPACE:
         sh: yq '(.platform, .services) | .["{{.APP}}"] | select(.) | .namespace' apps/values.yaml
     cmds:
-      - helm dependency build {{.DIR}} >/dev/null
-      - helm template {{.RELEASE}} {{.DIR}} --namespace {{.NAMESPACE}} --include-crds
+      - |
+        if [ -f {{.DIR}}/kustomization.yaml ]; then
+          kubectl kustomize {{.DIR}}
+        else
+          helm dependency build {{.DIR}} >/dev/null
+          helm template {{.RELEASE}} {{.DIR}} --namespace {{.NAMESPACE}} --include-crds
+        fi
 
   render:cilium:
     desc: Render Cilium with the pin and values of the shared cilium/ directory
@@ -106,8 +114,11 @@ tasks:
       DIR:
         sh: find platform services -mindepth 1 -maxdepth 1 -name '{{.APP}}'
     cmds:
-      - helm dependency build {{.DIR}} >/dev/null
-      - helm lint {{.DIR}} --quiet
+      - |
+        if [ ! -f {{.DIR}}/kustomization.yaml ]; then
+          helm dependency build {{.DIR}} >/dev/null
+          helm lint {{.DIR}} --quiet
+        fi
       - task render APP={{.APP}} >/dev/null
 
   bootstrap:
@@ -174,11 +185,12 @@ tasks:
       - echo "sealed monitoring/alertmanager-slack -> {{.OUTPUT}}"
 
   seal:cloudflared:
-    desc: Seal the Cloudflare Tunnel credentials (CLOUDFLARED_CREDENTIALS = file from `cloudflared tunnel create`, prompted when unset) and set tunnelID
+    desc: Seal the Cloudflare Tunnel credentials (CLOUDFLARED_CREDENTIALS = file from `cloudflared tunnel create`, prompted when unset) and point the cloudflared config and the Gateway at the tunnel
     interactive: true
     vars:
-      OUTPUT: platform/public-gateway/templates/cloudflared-credentials.sealedsecret.yaml
-      VALUES: platform/public-gateway/values.yaml
+      OUTPUT: platform/public-gateway/cloudflared-credentials.sealedsecret.yaml
+      CONFIG: platform/public-gateway/files/cloudflared.yaml
+      GATEWAY: platform/public-gateway/public.gateway.yaml
     cmds:
       - mkdir -p {{dir .OUTPUT}}
       - |
@@ -192,8 +204,9 @@ tasks:
           | .metadata.name = "cloudflared-credentials" | .metadata.namespace = "public-gateway"
           | .stringData."credentials.json" = strenv(CREDENTIALS_JSON)' \
           | kubeseal --format yaml > {{.OUTPUT}}
-        sed -i "s/^tunnelID: .*/tunnelID: \"$TUNNEL_ID\"/" {{.VALUES}}
-        echo "sealed public-gateway/cloudflared-credentials -> {{.OUTPUT}}, tunnelID $TUNNEL_ID -> {{.VALUES}}"
+        sed -i "s/^tunnel: .*/tunnel: $TUNNEL_ID/" {{.CONFIG}}
+        sed -i "s/^\( *external-dns.kubernetes.io\/target:\).*/\1 $TUNNEL_ID.cfargotunnel.com/" {{.GATEWAY}}
+        echo "sealed public-gateway/cloudflared-credentials -> {{.OUTPUT}}, tunnel $TUNNEL_ID -> {{.CONFIG}}, {{.GATEWAY}}"
 
   seal:argocd-github:
     desc: Seal the GitHub OAuth App Argo CD's Dex logs in with (GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET, prompted when unset; callback https://argocd.<tailnet>.ts.net/api/dex/callback)
@@ -250,7 +263,7 @@ tasks:
     desc: Seal the CouchDB admin for Obsidian LiveSync (COUCHDB_USER default admin, COUCHDB_PASSWORD prompted when unset)
     interactive: true
     vars:
-      OUTPUT: services/obsidian-livesync/templates/couchdb-admin.sealedsecret.yaml
+      OUTPUT: services/obsidian-livesync/couchdb-admin.sealedsecret.yaml
     cmds:
       - mkdir -p {{dir .OUTPUT}}
       - |
@@ -267,7 +280,8 @@ tasks:
     desc: Seal the Vaultwarden ADMIN_TOKEN (VAULTWARDEN_ADMIN_TOKEN = Argon2id PHC string, prompted when unset; make it with `docker run --rm -it vaultwarden/server /vaultwarden hash --preset owasp`)
     interactive: true
     vars:
-      OUTPUT: services/vaultwarden/templates/admin-token.sealedsecret.yaml
+      OUTPUT: services/vaultwarden/admin-token.sealedsecret.yaml
+      STATEFULSET: services/vaultwarden/vaultwarden.statefulset.yaml
     cmds:
       - mkdir -p {{dir .OUTPUT}}
       - |
@@ -285,7 +299,10 @@ tasks:
           | .metadata.name = "vaultwarden-admin" | .metadata.namespace = "vaultwarden"
           | .stringData.token = strenv(VAULTWARDEN_ADMIN_TOKEN)' \
           | kubeseal --format yaml > {{.OUTPUT}}
-      - echo "sealed vaultwarden/vaultwarden-admin -> {{.OUTPUT}}"
+        # The token is read at startup only: a new checksum rolls the Pod once Argo CD syncs the commit
+        CHECKSUM=$(sha256sum {{.OUTPUT}} | cut -c1-16)
+        sed -i "s/^\( *checksum\/admin-token:\).*/\1 $CHECKSUM/" {{.STATEFULSET}}
+      - echo "sealed vaultwarden/vaultwarden-admin -> {{.OUTPUT}}, checksum -> {{.STATEFULSET}}"
 
   backup:sealed-secrets:
     desc: Export the sealed-secrets controller keys, sops-encrypted to the age keys in lab-proxmox/.sops.yaml (OUTPUT=..., default ~/sealed-secrets-keys-<date>.sops.yaml). Keep the file offline and in Vaultwarden, and redo it after the controller adds a key (every 30 days)

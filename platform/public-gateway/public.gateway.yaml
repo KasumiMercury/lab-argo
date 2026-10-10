@@ -1,0 +1,27 @@
+# Entry point for services published on the internet. A service is published by an HTTPRoute in its own
+# namespace, which must carry the label lab.mercuryksm.net/public-gateway=true (apps/values.yaml namespaceLabels),
+# that names its hostname and this Gateway:
+#   parentRefs: [{name: public, namespace: public-gateway}]
+#   hostnames: [foo.mercuryksm.net]
+# external-dns then creates the proxied CNAME foo.mercuryksm.net -> <tunnel>.cfargotunnel.com.
+# Anything published this way has no Cloudflare Access unless one is created for its hostname.
+# TLS is terminated by Cloudflare; cloudflared forwards every hostname here over plain HTTP.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: public
+  annotations:
+    # Tunnel in files/cloudflared.yaml (task seal:cloudflared sets both)
+    external-dns.kubernetes.io/target: 9efda141-fb63-4300-81e2-74a684d7e6ce.cfargotunnel.com
+spec:
+  gatewayClassName: cilium-public
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              lab.mercuryksm.net/public-gateway: "true"

@@ -1,0 +1,36 @@
+# CouchDB for Obsidian Self-hosted LiveSync, published as talaria.mercuryksm.net
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: obsidian-livesync
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: obsidian-livesync
+      app.kubernetes.io/managed-by: argocd
+    includeSelectors: false
+resources:
+  - couchdb.statefulset.yaml
+  - couchdb.service.yaml
+  - couchdb.httproute.yaml
+  - couchdb-admin.sealedsecret.yaml
+  - couchdb.servicemonitor.yaml
+  - couchdb.prometheusrule.yaml
+  - default-deny.ciliumnetworkpolicy.yaml
+  - couchdb.ciliumnetworkpolicy.yaml
+configMapGenerator:
+  # CouchDB settings for Self-hosted LiveSync
+  # (https://github.com/vrtmrz/obsidian-livesync/blob/main/docs/setup_own_server.md).
+  # The name suffix rolls the StatefulSet on every change.
+  - name: couchdb
+    files:
+      - files/livesync.ini
+  # Loaded by the Grafana sidecar (grafana_dashboard label, all namespaces)
+  - name: couchdb-dashboard
+    files:
+      - dashboards/couchdb.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
+images:
+  - name: couchdb
+    newTag: 3.5.2

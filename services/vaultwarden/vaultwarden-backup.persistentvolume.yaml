@@ -1,0 +1,21 @@
+# The PV is static with reclaimPolicy Retain, so deleting the PVC or the Application never deletes backups.
+# It covers the whole nfs-csi export; the Job mounts only the subPath (kubelet creates it on first use).
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: vaultwarden-backup
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes: ["ReadWriteMany"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: vaultwarden
+    name: vaultwarden-backup
+  csi:
+    driver: nfs.csi.k8s.io
+    volumeHandle: 192.168.110.5#nfs/k8s#vaultwarden-backup
+    volumeAttributes:
+      server: 192.168.110.5
+      share: /nfs/k8s

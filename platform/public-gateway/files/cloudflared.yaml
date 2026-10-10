@@ -1,0 +1,6 @@
+tunnel: 9efda141-fb63-4300-81e2-74a684d7e6ce
+credentials-file: /etc/cloudflared/creds/credentials.json
+metrics: 0.0.0.0:2000
+no-autoupdate: true
+ingress:
+  - service: http://cilium-gateway-public.public-gateway.svc.cluster.local:80

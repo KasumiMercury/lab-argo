@@ -1,0 +1,27 @@
+# Default deny for the namespace: CouchDB is reached only through the public Gateway and by Prometheus,
+# and makes no outbound connections.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: default-deny
+spec:
+  endpointSelector: {}
+  enableDefaultDeny:
+    ingress: true
+    egress: true
+  # An empty rule turns ingress enforcement on for pods that no other rule gives an ingress section
+  # (enableDefaultDeny alone leaves it off)
+  ingress:
+    - {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: ANY
+          rules:
+            dns:
+              - matchPattern: "*"

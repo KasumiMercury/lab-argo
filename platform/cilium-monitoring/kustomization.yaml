@@ -1,0 +1,29 @@
+# Prometheus scrape configuration for Cilium and HTTP visibility policies.
+# No common namespace: the PodMonitors live in kube-system next to the Cilium pods and each visibility policy in
+# the namespace of its workload, so every manifest sets its own.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: cilium-monitoring
+      app.kubernetes.io/managed-by: argocd
+    includeSelectors: false
+resources:
+  # Scrape configuration for Cilium, which is rendered from the shared cilium/ directory (apps/templates/cilium.yaml).
+  # The metrics ports and Grafana dashboards are enabled in cilium/values.yaml; the scrape side lives here because
+  # the Ansible bootstrap installs Cilium before the Prometheus Operator CRDs exist, so the chart's ServiceMonitors
+  # cannot be used. PodMonitors select the pods directly: the agent and operator have no metrics Service.
+  # kube-prometheus-stack's Prometheus selects every PodMonitor in every namespace.
+  # The chart's dashboards select series by pod label (k8s_app="cilium", io_cilium_app="operator"), so the
+  # PodMonitors copy those labels onto the targets (podTargetLabels). Every series gets cluster="lab", which the
+  # Hubble per-namespace dashboards filter on (label_values(cilium_version, cluster)).
+  - cilium-agent.podmonitor.yaml
+  - cilium-operator.podmonitor.yaml
+  - cilium-envoy.podmonitor.yaml
+  # HTTP visibility: ingress traffic to the listed ports is sent through Cilium's Envoy so Hubble records L7 flows
+  # and the httpV2 metrics (hubble_http_*). enableDefaultDeny: false keeps the selected pods' other traffic as it
+  # is (no policy enforcement); the empty HTTP rule allows every request and only makes Envoy parse it. Only plain
+  # HTTP is visible (not TLS), and each request takes an extra Envoy hop (Envoy's stream idle timeout is 300s).
+  # Keep high-volume traffic such as metrics scrapes out of these policies.
+  - l7-visibility-grafana.ciliumnetworkpolicy.yaml
+  - l7-visibility-argocd-server.ciliumnetworkpolicy.yaml

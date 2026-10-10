@@ -1,0 +1,39 @@
+# Gateway "public" (Cilium Gateway API) reached from the internet through a Cloudflare Tunnel (cloudflared)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: public-gateway
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: public-gateway
+      app.kubernetes.io/managed-by: argocd
+    includeSelectors: false
+resources:
+  - public.gateway.yaml
+  - cilium-public.gatewayclass.yaml
+  - public.ciliumgatewayclassconfig.yaml
+  - public-gateway.ciliumloadbalancerippool.yaml
+  - default-deny.ciliumnetworkpolicy.yaml
+  - cloudflared.ciliumnetworkpolicy.yaml
+  - cloudflared.deployment.yaml
+  - cloudflared-credentials.sealedsecret.yaml
+configMapGenerator:
+  # Tunnel dedicated to this cluster (locally-managed: `cloudflared tunnel create <name>`); task seal:cloudflared
+  # sets its ID here and in the Gateway's external-dns target. The name suffix rolls cloudflared on every change.
+  - name: cloudflared
+    files:
+      - config.yaml=files/cloudflared.yaml
+images:
+  - name: cloudflare/cloudflared
+    newTag: 2026.10.0
+transformers:
+  # Kustomize does not know these custom resources are cluster-scoped and would give them the namespace above
+  - |-
+    apiVersion: builtin
+    kind: PatchTransformer
+    metadata:
+      name: cluster-scoped
+    target:
+      kind: GatewayClass|CiliumLoadBalancerIPPool
+    patch: |-
+      - op: remove
+        path: /metadata/namespace

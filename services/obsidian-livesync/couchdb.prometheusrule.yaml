@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: couchdb
+spec:
+  groups:
+    - name: couchdb
+      rules:
+        - alert: CouchDBDown
+          # absent() also fires when the Pod or its target is gone altogether
+          expr: absent(up{namespace="obsidian-livesync", service="couchdb"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: CouchDB for Obsidian LiveSync is down
+            description: Prometheus has not scraped CouchDB in obsidian-livesync for 5 minutes; LiveSync clients cannot sync.
+        - alert: CouchDBServerErrors
+          expr: |
+            sum(rate(couchdb_httpd_status_codes{namespace="obsidian-livesync", code=~"5.."}[10m]))
+              / sum(rate(couchdb_httpd_status_codes{namespace="obsidian-livesync"}[10m])) > 0.05
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: CouchDB answers more than 5% of requests with 5xx
+            description: "{{ $value | humanizePercentage }} of CouchDB requests in obsidian-livesync failed with a 5xx status over the last 10 minutes."
+        - alert: CouchDBReplicationJobsCrashed
+          expr: couchdb_couch_replicator_jobs_crashed{namespace="obsidian-livesync"} > 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: CouchDB replication jobs keep crashing
+            description: "{{ $value }} replication job(s) in obsidian-livesync are in the crashed state (check /_scheduler/jobs)."

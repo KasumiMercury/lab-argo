@@ -1,0 +1,16 @@
+# Published on the internet through the public Gateway (Cloudflare Tunnel, no Cloudflare Access: the LiveSync
+# clients cannot pass it). CouchDB's own authentication protects every request (require_valid_user).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: couchdb
+spec:
+  parentRefs:
+    - name: public
+      namespace: public-gateway
+  hostnames:
+    - talaria.mercuryksm.net
+  rules:
+    - backendRefs:
+        - name: couchdb
+          port: 5984

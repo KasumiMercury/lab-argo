@@ -1,0 +1,20 @@
+# https://vault.<tailnet>.ts.net, tailnet only: no tailscale.com/funnel annotation, no HTTPRoute on the
+# public Gateway. The proxy terminates TLS with the ts.net certificate (the web vault needs HTTPS for WebCrypto).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vaultwarden
+  annotations:
+    # The tailnet policy decides who reaches the device through this tag; tagOwners must let tag:k8s-operator
+    # own it, or the proxy never joins the tailnet
+    tailscale.com/tags: tag:vaultwarden
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: vaultwarden
+      port:
+        name: http
+  tls:
+    - hosts:
+        - vault

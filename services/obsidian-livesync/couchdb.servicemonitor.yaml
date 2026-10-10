@@ -1,0 +1,16 @@
+# Monitoring for CouchDB: scraped by kube-prometheus-stack (its Prometheus selects every ServiceMonitor and
+# PrometheusRule), dashboard loaded by the Grafana sidecar (grafana_dashboard label, all namespaces).
+# Running out of space on the volume is covered by KubePersistentVolumeFillingUp and restarts by
+# KubePodCrashLooping from the stack's default rules.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: couchdb
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: couchdb
+  endpoints:
+    - port: metrics
+      path: /_node/_local/_prometheus
+      interval: 30s

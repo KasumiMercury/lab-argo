@@ -1,0 +1,23 @@
+# Vaultwarden on the tailnet only, as https://vault.<tailnet>.ts.net
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: vaultwarden
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: vaultwarden
+      app.kubernetes.io/managed-by: argocd
+    includeSelectors: false
+resources:
+  - vaultwarden.statefulset.yaml
+  - vaultwarden.service.yaml
+  - vaultwarden.ingress.yaml
+  - admin-token.sealedsecret.yaml
+  - vaultwarden-backup.cronjob.yaml
+  - vaultwarden-backup.persistentvolume.yaml
+  - vaultwarden-backup.persistentvolumeclaim.yaml
+  - default-deny.ciliumnetworkpolicy.yaml
+  - vaultwarden.ciliumnetworkpolicy.yaml
+images:
+  # The server and the backup CronJob
+  - name: vaultwarden/server
+    newTag: 1.37.4

@@ -1,0 +1,15 @@
+# Addresses for the Gateway's LoadBalancer Service (Cilium LB IPAM). Restricted to Services that Cilium creates
+# for Gateways, so other LoadBalancer Services do not take from it.
+# Only reached from inside the cluster (cloudflared), not announced on the LAN. Must not overlap the pod CIDR
+# (10.1.0.0/16), the Service CIDR (10.152.183.0/24) or the LAN (192.168.0.0/16).
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: public-gateway
+spec:
+  blocks:
+    - cidr: 10.100.0.0/28
+  serviceSelector:
+    matchExpressions:
+      - key: io.cilium.gateway/owning-gateway
+        operator: Exists

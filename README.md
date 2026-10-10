@@ -5,13 +5,15 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 
 ## Layout
 - `bootstrap/root.yaml`: root Application (app-of-apps). Applied once by hand
-- `apps/`: Helm chart that renders one Application per component (`values.yaml` lists them under `platform` and `services` with namespace, release name, sync wave)
+- `apps/`: Helm chart that renders one Application per component (`values.yaml` lists them under `platform` and `services` with namespace, release name for Helm charts, sync wave)
 - `platform/<component>/`: cluster-wide infrastructure the services rely on (GitOps, secrets, storage, networking, observability)
 - `services/<component>/`: applications that run on the platform
-- Each component directory is an umbrella Helm chart. `Chart.yaml` + `Chart.lock` pin the upstream chart, `values.yaml` configures it under the dependency name, `templates/` holds extra manifests (SealedSecrets)
+- A component that deploys an upstream chart is an umbrella Helm chart. `Chart.yaml` + `Chart.lock` pin the upstream chart, `values.yaml` configures it under the dependency name, `templates/` holds extra manifests (SealedSecrets)
+- A component made of our own manifests only is a kustomization (`kustomization.yaml`). It sets the namespace and the common labels `app.kubernetes.io/part-of: <component>` and `app.kubernetes.io/managed-by: argocd` (metadata only, never selectors), pins the images under `images`, and builds ConfigMaps from `files/` and `dashboards/` with `configMapGenerator`
+- Every manifest of our own is one resource per file, named `<name>.<kind>.yaml` (for example `vaultwarden.statefulset.yaml`)
 - `cilium/`: git submodule of [lab-cilium](https://github.com/KasumiMercury/lab-cilium), the Cilium chart pin (`version.yaml`) and values shared with the lab-proxmox bootstrap; see `cilium/README.md`. `apps/cilium` is a symlink to it so the app-of-apps chart can read the pin. Clone with `git clone --recurse-submodules` (or run `git submodule update --init`)
 
-Versions are not listed here: each component pins them in its `Chart.yaml`/`Chart.lock` (images in `values.yaml`), Cilium and the Gateway API CRDs in `cilium/`.
+Versions are not listed here: each component pins them in its `Chart.yaml`/`Chart.lock` (images in `values.yaml`) or `kustomization.yaml` (`images`), Cilium and the Gateway API CRDs in `cilium/`.
 
 ### Platform
 
@@ -32,7 +34,7 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 | external-dns | external-dns (Cloudflare, mercuryksm.net) | external-dns | 1 |
 | ceph-csi-rbd | ceph-csi-rbd + StorageClass `ceph-rbd` (default; Proxmox Ceph, pool `k8s`, Retain), VolumeSnapshotClass `ceph-rbd` | ceph-csi-rbd | 0 |
 | coredns | PodDisruptionBudget (`minAvailable: 1`) for the CoreDNS installed by Talos; its spread across nodes is set by the lab-proxmox bootstrap | kube-system | 0 |
-| cilium-monitoring | PodMonitors for the Cilium agent, operator, Envoy and Hubble (dashboards come with the cilium chart), HTTP visibility policies (`l7Visibility`) | kube-system | 2 |
+| cilium-monitoring | PodMonitors for the Cilium agent, operator, Envoy and Hubble (dashboards come with the cilium chart), HTTP visibility policies (`l7-visibility-*.ciliumnetworkpolicy.yaml`) | kube-system | 2 |
 
 ### Services
 
@@ -57,19 +59,19 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
    Until then the Tailscale operator, Grafana and Alertmanager pods wait for their Secrets
 4. To publish services on the internet (see [Publishing a service](#publishing-a-service)):
    - Create a tunnel dedicated to this cluster: `cloudflared tunnel login` and `cloudflared tunnel create <name>` (writes `~/.cloudflared/<tunnel-id>.json`). Do not route DNS to it by hand; external-dns does that
-   - `task seal:cloudflared` → `platform/public-gateway/templates/cloudflared-credentials.sealedsecret.yaml`, and sets `tunnelID` in `platform/public-gateway/values.yaml`
+   - `task seal:cloudflared` → `platform/public-gateway/cloudflared-credentials.sealedsecret.yaml`, and sets the tunnel ID in `platform/public-gateway/files/cloudflared.yaml` and in the external-dns target of `platform/public-gateway/public.gateway.yaml`
    - `task seal:external-dns` → `platform/external-dns/templates/cloudflare-api-token.sealedsecret.yaml` (API token with Zone:Zone:Read and Zone:DNS:Edit on mercuryksm.net)
-   - Commit and push. cloudflared is deployed and the Gateway gets the tunnel as its DNS target only once `tunnelID` is set
+   - Commit and push
 5. Ceph RBD volumes (`ceph-rbd`): on a Proxmox host create the pool and the client once (commands in `platform/ceph-csi-rbd/values.yaml`), then `task seal:ceph-csi` (`CEPH_USER_KEY=$(ssh root@<host> ceph auth get-key client.k8s)`). The k8s nodes must reach the mons and OSDs (192.168.20.0/24, TCP 3300/6789/6800-7300)
-6. `task seal:couchdb` → `services/obsidian-livesync/templates/couchdb-admin.sealedsecret.yaml` (CouchDB admin for LiveSync)
+6. `task seal:couchdb` → `services/obsidian-livesync/couchdb-admin.sealedsecret.yaml` (CouchDB admin for LiveSync)
 7. Vaultwarden (see [Vaultwarden](#vaultwarden)):
    - In the tailnet policy, let the operator own `tag:vaultwarden` (`"tag:vaultwarden": ["tag:k8s-operator"]` in `tagOwners`) and grant `tcp:443` on it to the users who need the vault only
-   - `docker run --rm -it vaultwarden/server /vaultwarden hash --preset owasp`, then `task seal:vaultwarden` with the printed `ADMIN_TOKEN` → `services/vaultwarden/templates/admin-token.sealedsecret.yaml`. Until then `/admin` is disabled
+   - `docker run --rm -it vaultwarden/server /vaultwarden hash --preset owasp`, then `task seal:vaultwarden` with the printed `ADMIN_TOKEN` → `services/vaultwarden/admin-token.sealedsecret.yaml` (also updates the `checksum/admin-token` annotation in `vaultwarden.statefulset.yaml`, which restarts Vaultwarden once synced). Until then `/admin` is disabled
 
 ## Reproducing what Argo CD renders
 Tools are pinned in `mise.toml` (`mise install`).
 Helm repositories are registered in `.helm/` of this repository, not in the user's global Helm config (`HELM_REPOSITORY_CONFIG`/`HELM_REPOSITORY_CACHE` in `mise.toml` and `Taskfile.yml`); `task repos` fills it. Dependencies from OCI registries (`oci://`) need no repository; prefer them when the upstream publishes one.
-- `task render APP=<component>`: `helm template` of a component with the same release name and namespace as its Application
+- `task render APP=<component>`: `helm template` of a Helm component with the same release name and namespace as its Application, `kubectl kustomize` of a kustomization
 - `task render:cilium`: Cilium with the pin and values from `cilium/`
 - `task render:apps`: the Applications generated by the root app
 - `task lint`: lint and render everything (run before pushing)
@@ -78,6 +80,8 @@ Helm repositories are registered in `.helm/` of this repository, not in the user
 1. Change the dependency `version` in `platform/<component>/Chart.yaml` (or `services/<component>/Chart.yaml`)
 2. `task deps:update APP=<component>` to rewrite `Chart.lock`
 3. `task render APP=<component>` to review the result, then commit
+
+The image of a kustomization is pinned by `newTag` under `images` in its `kustomization.yaml`.
 
 Cilium is changed in lab-cilium (bump `version.yaml` one minor version at a time, see `cilium/README.md`). Push it there, then move the pointer here: `git submodule update --remote cilium` and commit `cilium`.
 

@@ -1,0 +1,11 @@
+# PodDisruptionBudget for the CoreDNS that Talos installs (the spread across nodes is set by the lab-proxmox bootstrap)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kube-system
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: coredns
+      app.kubernetes.io/managed-by: argocd
+    includeSelectors: false
+resources:
+  - coredns.poddisruptionbudget.yaml

@@ -19,8 +19,10 @@ spec:
     repoURL: {{ $.Values.repoURL }}
     targetRevision: {{ $.Values.targetRevision }}
     path: {{ $group }}/{{ $name }}
+    {{- with $c.releaseName }}
     helm:
-      releaseName: {{ $c.releaseName }}
+      releaseName: {{ . }}
+    {{- end }}
   destination:
     server: {{ $.Values.destinationServer }}
     namespace: {{ $c.namespace }}
