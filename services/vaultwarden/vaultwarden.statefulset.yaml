@@ -1,5 +1,5 @@
 # Single-replica Vaultwarden on SQLite. ADMIN_TOKEN (Argon2id PHC string) comes from
-# admin-token.sealedsecret.yaml (task seal:vaultwarden); without it the /admin page stays disabled.
+# vaultwarden-admin.sealedsecret.yaml (task seal:vaultwarden); without it the /admin page stays disabled.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -16,7 +16,7 @@ spec:
         app.kubernetes.io/name: vaultwarden
       annotations:
         # ADMIN_TOKEN is read at startup only: roll the Pod when the sealed token changes
-        # (task seal:vaultwarden sets the first 16 hex digits of the sha256 of admin-token.sealedsecret.yaml)
+        # (task seal:vaultwarden sets the first 16 hex digits of the sha256 of vaultwarden-admin.sealedsecret.yaml)
         checksum/admin-token: 1cb7265ae6c6d393
     spec:
       securityContext:

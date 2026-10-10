@@ -30,7 +30,7 @@ loki:
     # Usage statistics to grafana.com
     analytics:
       reporting_enabled: false
-    # Alerting rules (templates/k8s-alert-rules.yaml) are read from the directory the rules sidecar writes
+    # Alerting rules (templates/k8s-alert-rules.configmap.yaml) are read from the directory the rules sidecar writes
     # to and their alerts go to kube-prometheus-stack's Alertmanager
     rulerConfig:
       storage:

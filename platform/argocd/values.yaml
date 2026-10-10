@@ -1,7 +1,7 @@
 argo-cd:
   configs:
     params:
-      # TLS is terminated by the Tailscale proxy (templates/server-ingress.yaml), so argocd-server speaks plain HTTP.
+      # TLS is terminated by the Tailscale proxy (templates/argocd-server-tailscale.ingress.yaml), so argocd-server speaks plain HTTP.
       # Keep in step with argocd_helm_values in lab-proxmox (ansible/roles/argocd/defaults/main.yml)
       server.insecure: true
     cm:

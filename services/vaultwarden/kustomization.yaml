@@ -11,7 +11,7 @@ resources:
   - vaultwarden.statefulset.yaml
   - vaultwarden.service.yaml
   - vaultwarden.ingress.yaml
-  - admin-token.sealedsecret.yaml
+  - vaultwarden-admin.sealedsecret.yaml
   - vaultwarden-backup.cronjob.yaml
   - vaultwarden-backup.persistentvolume.yaml
   - vaultwarden-backup.persistentvolumeclaim.yaml

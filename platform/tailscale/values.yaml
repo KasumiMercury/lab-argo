@@ -9,6 +9,6 @@ tailscale-operator:
         memory: 64Mi
       limits:
         memory: 128Mi
-  # templates/proxyclass.yaml
+  # templates/default.proxyclass.yaml
   proxyConfig:
     defaultProxyClass: default

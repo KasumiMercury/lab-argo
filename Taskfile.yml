@@ -73,7 +73,7 @@ tasks:
     cmds:
       - |
         if [ -f {{.DIR}}/kustomization.yaml ]; then
-          kubectl kustomize {{.DIR}}
+          kustomize build {{.DIR}}
         else
           helm dependency build {{.DIR}} >/dev/null
           helm template {{.RELEASE}} {{.DIR}} --namespace {{.NAMESPACE}} --include-crds
@@ -212,7 +212,7 @@ tasks:
     desc: Seal the GitHub OAuth App Argo CD's Dex logs in with (GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET, prompted when unset; callback https://argocd.<tailnet>.ts.net/api/dex/callback)
     interactive: true
     vars:
-      OUTPUT: platform/argocd/templates/dex-github.sealedsecret.yaml
+      OUTPUT: platform/argocd/templates/argocd-dex-github.sealedsecret.yaml
     cmds:
       - mkdir -p {{dir .OUTPUT}}
       - |
@@ -280,7 +280,7 @@ tasks:
     desc: Seal the Vaultwarden ADMIN_TOKEN (VAULTWARDEN_ADMIN_TOKEN = Argon2id PHC string, prompted when unset; make it with `docker run --rm -it vaultwarden/server /vaultwarden hash --preset owasp`)
     interactive: true
     vars:
-      OUTPUT: services/vaultwarden/admin-token.sealedsecret.yaml
+      OUTPUT: services/vaultwarden/vaultwarden-admin.sealedsecret.yaml
       STATEFULSET: services/vaultwarden/vaultwarden.statefulset.yaml
     cmds:
       - mkdir -p {{dir .OUTPUT}}
