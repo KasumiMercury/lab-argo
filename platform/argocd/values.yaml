@@ -37,11 +37,12 @@ argo-cd:
         return hs
     # CiliumIdentity/CiliumEndpoint are already in the chart's default resource.exclusions
     rbac:
-      # Only these GitHub logins get a role; everyone else who authenticates sees nothing
+      # Only these GitHub users get a role; everyone else who authenticates sees nothing.
+      # The subject is Dex's federated_claims.user_id, which the GitHub connector sets to the numeric user ID
+      # (gh api users/<login> -q .id). Unlike the login or email, it cannot be changed or taken over.
       policy.default: ""
       policy.csv: |
-        g, KasumiMercury, role:admin
-      scopes: "[preferred_username]"
+        g, 88318012, role:admin
 
   # From the observed peaks (application-controller ~840Mi, repo-server ~200Mi while rendering)
   controller:
