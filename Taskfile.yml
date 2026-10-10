@@ -268,3 +268,26 @@ tasks:
           | .stringData.token = strenv(VAULTWARDEN_ADMIN_TOKEN)' \
           | kubeseal --format yaml > {{.OUTPUT}}
       - echo "sealed vaultwarden/vaultwarden-admin -> {{.OUTPUT}}"
+
+  backup:sealed-secrets:
+    desc: Export the sealed-secrets controller keys, sops-encrypted to the age keys in lab-proxmox/.sops.yaml (OUTPUT=..., default ~/sealed-secrets-keys-<date>.sops.yaml). Keep the file offline and in Vaultwarden, and redo it after the controller adds a key (every 30 days)
+    vars:
+      OUTPUT: '{{.OUTPUT | default ""}}'
+    cmds:
+      - |
+        OUT="{{.OUTPUT}}"
+        OUT="${OUT:-$HOME/sealed-secrets-keys-$(date +%F).sops.yaml}"
+        install -m 0600 /dev/null "$OUT"
+        kubectl -n kube-system get secret -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml \
+          | yq 'del(.items[].metadata.uid, .items[].metadata.resourceVersion, .items[].metadata.creationTimestamp, .items[].metadata.managedFields)' \
+          | sops --config ../lab-proxmox/.sops.yaml encrypt --encrypted-regex '^(data|stringData)$' \
+              --filename-override "$OUT" --input-type yaml --output-type yaml /dev/stdin > "$OUT"
+        echo "$(yq '.items | length' "$OUT") key(s) -> $OUT"
+
+  restore:sealed-secrets:
+    desc: Load the keys from a backup:sealed-secrets file into the cluster (FILE=...), so existing SealedSecrets decrypt without resealing
+    requires:
+      vars: [FILE]
+    cmds:
+      - sops decrypt --input-type yaml --output-type yaml {{.FILE}} | kubectl apply -f -
+      - kubectl -n kube-system rollout restart deploy/sealed-secrets-controller

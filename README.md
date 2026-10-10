@@ -38,7 +38,7 @@ lab-proxmox bootstraps the cluster, Cilium and Argo CD; from then on everything 
 ## Bootstrap
 1. Build the cluster with lab-proxmox (`task tf:apply TF_ENV=k8s` and `task k8s:bootstrap TF_ENV=k8s`). The kubeconfig lands in `../lab-proxmox/ansible/artifacts/k8s.kubeconfig`, which the Taskfile uses by default (override with `KUBECONFIG=...`)
 2. `task bootstrap` (applies `bootstrap/root.yaml` to the cluster in `KUBECONFIG`)
-3. Once `sealed-secrets` is healthy, seal the credentials with the new cluster's key, commit and push:
+3. Once `sealed-secrets` is healthy, seal the credentials with the new cluster's key, commit and push. With a key backup from `task backup:sealed-secrets`, run `task restore:sealed-secrets FILE=<backup>` instead and the committed SealedSecrets decrypt as they are:
    - `task seal:tailscale` → `platform/tailscale/templates/operator-oauth.sealedsecret.yaml` (OAuth client with the scopes and tag `tag:k8s-operator` described in the Tailscale operator docs)
    - `task seal:grafana` → `platform/kube-prometheus-stack/templates/grafana-admin.sealedsecret.yaml`
    - `task seal:slack` → `platform/kube-prometheus-stack/templates/alertmanager-slack.sealedsecret.yaml` (bot token of the Slack App shared with lab-proxmox, `vault_slack_bot_token`; the bot must be invited to #k8s-alert)
@@ -115,3 +115,8 @@ Prometheus keeps its TSDB there (20Gi, 15 days).
 - Only SealedSecrets are committed (`*.sealedsecret.yaml`); plaintext `*secret.yaml` files are gitignored
 - The `seal:*` tasks build the Secret in memory from environment variables or a prompt and pipe it to `kubeseal`, so plaintext never touches the disk
 - SealedSecrets can only be decrypted by the cluster that sealed them. Rebuilding the cluster means sealing again, or restoring the controller key: export it from the old cluster (`kubectl -n kube-system get secret -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml`) and pass the file to the lab-proxmox bootstrap (`task k8s:bootstrap TF_ENV=k8s SEALED_SECRETS_KEY=<file>`), which applies it before the controller starts
+
+## Sealed Secrets key backup
+- `task backup:sealed-secrets` writes every controller key to `~/sealed-secrets-keys-<date>.sops.yaml`, encrypted with sops to the age keys in `../lab-proxmox/.sops.yaml` (only `data` is encrypted, so the key names stay readable). Keep it offline and in Vaultwarden
+- The controller adds a new key every 30 days and keeps the old ones, so take a new backup after each renewal
+- `task restore:sealed-secrets FILE=<backup>` applies the keys and restarts the controller
