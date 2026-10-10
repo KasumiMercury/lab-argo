@@ -100,6 +100,7 @@ tasks:
     desc: Lint and render every chart to catch errors before pushing
     deps: [repos]
     cmds:
+      - task: check:kustomize
       - helm lint apps --quiet
       - helm template apps apps >/dev/null
       - for: { var: COMPONENT_DIRS }
@@ -120,6 +121,29 @@ tasks:
           helm lint {{.DIR}} --quiet
         fi
       - task render APP={{.APP}} >/dev/null
+
+  check:kustomize:
+    desc: Check that mise.toml pins the kustomize Argo CD builds with (the argo-cd chart's appVersion, then kustomize5_version in that release's hack/tool-versions.sh); FIX=true rewrites mise.toml
+    vars:
+      FIX: '{{.FIX | default "false"}}'
+    cmds:
+      - |
+        set -eu
+        chart=$(yq '.dependencies[] | select(.name == "argo-cd") | .repository + "/" + .name' platform/argocd/Chart.yaml)
+        version=$(yq '.dependencies[] | select(.name == "argo-cd") | .version' platform/argocd/Chart.yaml)
+        app=$(helm show chart "$chart" --version "$version" | yq .appVersion)
+        want=$(curl -fsSL "https://raw.githubusercontent.com/argoproj/argo-cd/$app/hack/tool-versions.sh" | sed -n 's/^kustomize5_version=//p')
+        [ -n "$want" ] || { echo "no kustomize5_version in argo-cd $app hack/tool-versions.sh" >&2; exit 1; }
+        have=$(sed -n 's/^kustomize = "\(.*\)"$/\1/p' mise.toml)
+        if [ "$have" = "$want" ]; then
+          echo "kustomize $have matches argo-cd $app (chart $version)"
+        elif [ "{{.FIX}}" = true ]; then
+          sed -i "s/^kustomize = \".*\"$/kustomize = \"$want\"/" mise.toml
+          echo "kustomize $have -> $want in mise.toml (argo-cd $app, chart $version)"
+        else
+          echo "mise.toml pins kustomize $have, argo-cd $app (chart $version) builds with $want: run task check:kustomize FIX=true" >&2
+          exit 1
+        fi
 
   bootstrap:
     desc: Apply the root Application (app-of-apps) to the cluster in KUBECONFIG

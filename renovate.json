@@ -5,5 +5,16 @@
   ],
   "git-submodules": {
     "enabled": true
-  }
+  },
+  "gitIgnoredAuthors": [
+    "41898282+github-actions[bot]@users.noreply.github.com"
+  ],
+  "packageRules": [
+    {
+      "description": "kustomize follows the version bundled in Argo CD: the kustomize-version workflow sets it on the argo-cd chart's PRs",
+      "matchManagers": ["mise"],
+      "matchDepNames": ["kustomize"],
+      "enabled": false
+    }
+  ]
 }

@@ -83,6 +83,8 @@ Helm repositories are registered in `.helm/` of this repository, not in the user
 
 The image of a kustomization is pinned by `newTag` under `images` in its `kustomization.yaml`.
 
+kustomize in `mise.toml` follows the version Argo CD builds with, so Renovate does not update it on its own. On a PR that changes the argo-cd chart, the `kustomize-version` workflow commits the matching version (the chart's Argo CD release, `kustomize5_version` in its `hack/tool-versions.sh`); `task check:kustomize` (part of `task lint`) checks it locally, `FIX=true` rewrites it.
+
 Cilium is changed in lab-cilium (bump `version.yaml` one minor version at a time, see `cilium/README.md`). Push it there, then move the pointer here: `git submodule update --remote cilium` and commit `cilium`.
 
 ## Publishing a service
