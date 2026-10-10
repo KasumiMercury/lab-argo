@@ -4,7 +4,7 @@ kubectl = "latest"
 kubeseal = "latest"
 # Same version as the one Argo CD's repo-server builds kustomizations with: `task check:kustomize` derives it from the
 # argo-cd chart in platform/argocd, and the kustomize-version workflow fixes it on the PRs that change that chart
-kustomize = "5.8.1"
+kustomize = "5.8.0"
 sops = "3.13.3"
 task = "3.54.0"
 yq = "latest"

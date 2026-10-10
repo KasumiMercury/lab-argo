@@ -1,3 +1,4 @@
+# workflow test
 apiVersion: v2
 name: argocd
 description: Argo CD managing itself (adopts the release installed by the lab-proxmox bootstrap)
