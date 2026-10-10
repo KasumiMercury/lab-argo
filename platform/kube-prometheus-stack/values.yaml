@@ -138,6 +138,19 @@ kube-prometheus-stack:
       existingSecret: grafana-admin
       userKey: admin-user
       passwordKey: admin-password
+    # Log in with GitHub (OAuth App, callback https://grafana.<tailnet>.ts.net/login/github). The client comes
+    # from the sealed grafana-github Secret (task seal:grafana-github) as GF_AUTH_GITHUB_CLIENT_ID/SECRET.
+    # Any GitHub account can authenticate, but only this user (numeric ID, as in Argo CD's RBAC) gets a role and
+    # the rest are refused. The admin password login stays as the way in when GitHub is unavailable.
+    envFromSecret: grafana-github
+    grafana.ini:
+      server:
+        root_url: https://grafana.tail4a681d.ts.net
+      auth.github:
+        enabled: true
+        scopes: user:email
+        role_attribute_path: "id == `88318012` && 'Admin' || ''"
+        role_attribute_strict: true
     # Reachable on the tailnet as https://grafana.<tailnet>.ts.net
     ingress:
       enabled: true

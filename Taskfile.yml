@@ -192,6 +192,25 @@ tasks:
           | kubeseal --format yaml > {{.OUTPUT}}
       - echo "sealed monitoring/grafana-admin -> {{.OUTPUT}}"
 
+  seal:grafana-github:
+    desc: Seal the GitHub OAuth App Grafana logs in with (GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET, prompted when unset; callback https://grafana.<tailnet>.ts.net/login/github)
+    interactive: true
+    vars:
+      OUTPUT: platform/kube-prometheus-stack/templates/grafana-github.sealedsecret.yaml
+    cmds:
+      - mkdir -p {{dir .OUTPUT}}
+      - |
+        [ -n "${GITHUB_CLIENT_ID:-}" ] || { printf 'GitHub OAuth client ID: '; read -r GITHUB_CLIENT_ID; }
+        [ -n "${GITHUB_CLIENT_SECRET:-}" ] || { printf 'GitHub OAuth client secret: '; stty -echo; read -r GITHUB_CLIENT_SECRET; stty echo; echo; }
+        export GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET
+        # Loaded into the Grafana container as environment variables (grafana.envFromSecret)
+        yq -n '.apiVersion = "v1" | .kind = "Secret"
+          | .metadata.name = "grafana-github" | .metadata.namespace = "monitoring"
+          | .stringData.GF_AUTH_GITHUB_CLIENT_ID = strenv(GITHUB_CLIENT_ID)
+          | .stringData.GF_AUTH_GITHUB_CLIENT_SECRET = strenv(GITHUB_CLIENT_SECRET)' \
+          | kubeseal --format yaml > {{.OUTPUT}}
+      - echo "sealed monitoring/grafana-github -> {{.OUTPUT}}"
+
   seal:slack:
     desc: Seal the Slack bot token Alertmanager posts with (SLACK_BOT_TOKEN, prompted when unset; the Slack App shared with lab-proxmox's vault_slack_bot_token)
     interactive: true
