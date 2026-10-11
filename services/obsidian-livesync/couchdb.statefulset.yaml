@@ -15,22 +15,13 @@ spec:
       labels:
         app.kubernetes.io/name: couchdb
     spec:
+      # Run as the image's couchdb user: the entrypoint chowns and chmods /opt/couchdb only as root, and fails
+      # silently (set -e) on the read-only ConfigMap mount, so the settings can be mounted directly
       securityContext:
+        runAsUser: 5984
+        runAsGroup: 5984
+        runAsNonRoot: true
         fsGroup: 5984
-      # The image's entrypoint (set -e) chowns and chmods everything under /opt/couchdb and exits silently on a
-      # read-only ConfigMap mount. Copy the settings into local.d instead, on every start so Git stays the
-      # source. "00-" sorts before docker.ini, which stays the last file and takes the runtime config changes.
-      initContainers:
-        - name: config
-          image: couchdb
-          command: ["cp", "/config/livesync.ini", "/opt/couchdb/etc/local.d/00-livesync.ini"]
-          volumeMounts:
-            - name: data
-              mountPath: /opt/couchdb/etc/local.d
-              subPath: local.d
-            - name: config
-              mountPath: /config
-              readOnly: true
       containers:
         - name: couchdb
           image: couchdb
@@ -75,6 +66,11 @@ spec:
             - name: data
               mountPath: /opt/couchdb/etc/local.d
               subPath: local.d
+            # "00-" sorts before docker.ini, which stays the last file and takes the runtime config changes
+            - name: config
+              mountPath: /opt/couchdb/etc/local.d/00-livesync.ini
+              subPath: livesync.ini
+              readOnly: true
       volumes:
         - name: config
           configMap:
