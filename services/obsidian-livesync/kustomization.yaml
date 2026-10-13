@@ -33,4 +33,4 @@ configMapGenerator:
         grafana_dashboard: "1"
 images:
   - name: couchdb
-    newTag: 3.5.2
+    newTag: 3.5.3
