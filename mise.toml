@@ -1,5 +1,5 @@
 [tools]
-helm = "4.3.0"
+helm = "4.3.1"
 kubectl = "latest"
 kubeseal = "latest"
 # Same version as the one Argo CD's repo-server builds kustomizations with: `task check:kustomize` derives it from the
