@@ -8,3 +8,6 @@
 
 # Helm repositories registered by task repos (HELM_REPOSITORY_CONFIG/HELM_REPOSITORY_CACHE)
 .helm/
+
+.DS_Store
+
