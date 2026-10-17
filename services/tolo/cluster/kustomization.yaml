@@ -3,6 +3,8 @@ kind: Component
 resources:
   - tolo.sealedsecret.yaml
   - tolo-firebase.sealedsecret.yaml
+  - tolo-models.persistentvolume.yaml
+  - tolo-models.persistentvolumeclaim.yaml
   - web.httproute.yaml
   - default-deny.ciliumnetworkpolicy.yaml
   - web.ciliumnetworkpolicy.yaml
@@ -23,5 +25,5 @@ patches:
   - path: edge-bridge.deployment.patch.yaml
   - path: observation.deployment.patch.yaml
 images:
-  - name: ghcr.io/astral-sh/uv
-    newTag: 0.13.1-python3.12-trixie-slim
+  - name: busybox
+    newTag: 1.38.0

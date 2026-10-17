@@ -7,28 +7,11 @@ spec:
     spec:
       initContainers:
         - name: models
-          image: ghcr.io/astral-sh/uv
-          workingDir: /tmp
+          image: busybox
           command:
-            - sh
-            - -c
-            - >-
-              uv run --no-project
-              --index https://download.pytorch.org/whl/cpu --index-strategy unsafe-best-match
-              --with ultralytics-opencv-headless==8.4.178
-              --with torch==2.14.1+cpu --with torchvision==0.29.1+cpu
-              --with onnx==1.23.2 --with onnxslim==0.1.98 --with onnxruntime==1.31.0
-              yolo export model=yolo26n.pt format=onnx imgsz=640 simplify=True
-              && cp yolo26n.onnx /models/
-          env:
-            - name: HOME
-              value: /tmp
-            - name: UV_CACHE_DIR
-              value: /tmp/uv
-            - name: YOLO_CONFIG_DIR
-              value: /tmp/yolo
-            - name: YOLO_OFFLINE
-              value: "1"
+            - cp
+            - /source/yolo26n.onnx
+            - /models/
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -38,8 +21,10 @@ spec:
           volumeMounts:
             - name: models
               mountPath: /models
-            - name: models-build
-              mountPath: /tmp
+            - name: models-source
+              mountPath: /source
+              subPath: tolo-models
+              readOnly: true
       containers:
         - name: web
           env:
@@ -66,6 +51,7 @@ spec:
                   name: tolo-firebase
                   key: app-id
       volumes:
-        - name: models-build
-          emptyDir:
-            sizeLimit: 4Gi
+        - name: models-source
+          persistentVolumeClaim:
+            claimName: tolo-models
+            readOnly: true

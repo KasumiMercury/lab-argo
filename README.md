@@ -72,6 +72,7 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
    - Create the Cloudflare Access application for `tolo.mercuryksm.net` and `*.tolo.mercuryksm.net` (a login policy; the devices that open the observation pages log in too) before the Application syncs
    - `task seal:tolo` → `services/tolo/cluster/tolo.sealedsecret.yaml` (generates the signing key, the introspection client secret and the database passwords)
    - `task seal:tolo-firebase` with the web app settings and the edge-bridge service account key of the Firebase test project → `services/tolo/cluster/tolo-firebase.sealedsecret.yaml`
+   - Put the model of the crowd detection on the NAS as `/nfs/k8s/tolo-models/yolo26n.onnx`, readable by everyone (export it as in tolo-web `docs/setup-for-detection-model.md`)
 
 ## Reproducing what Argo CD renders
 Tools are pinned in `mise.toml` (`mise install`).
@@ -137,8 +138,8 @@ Prometheus keeps its TSDB there (20Gi, 15 days).
 ## TOLO
 `services/tolo/kustomization.yaml` takes the base of tolo-manifest at a fixed commit (`ref`) and adds the component `services/tolo/cluster`, which holds everything specific to this cluster. A preview environment for a tolo-manifest pull request can reuse the component on top of the base of the pull request, in its own namespace: both Secrets are sealed cluster-wide, and the hostnames sit in the HTTPRoutes, `ROOT_DOMAIN` of web and `OBSERVATION_PAGE_URL_TEMPLATE` of observation.
 
-- The model of the crowd detection (`yolo26n.onnx`) is exported by the initContainer `models` of web at every start, with the CPU build of PyTorch (about 1.4 GB of packages, under a minute)
-- The namespace denies all traffic except within itself and to DNS; each workload accepts only its callers, and only web accepts the public Gateway (the databases their service, the internal port 8090 of service-gateway the backends, flow-control observation). web reaches PyPI, the PyTorch index and GitHub for the model, edge-bridge reaches `*.googleapis.com`
+- The initContainer `models` of web copies the model of the crowd detection from the NAS (`/nfs/k8s/tolo-models/yolo26n.onnx`, the static PV `tolo-models`) to the `models` volume of the base at every start, so the NAS is needed only when web starts. To change the model, replace the file and restart web. A preview environment needs a PV of its own with the same share, since a PV binds to one PVC
+- The namespace denies all traffic except within itself and to DNS; each workload accepts only its callers, and only web accepts the public Gateway (the databases their service, the internal port 8090 of service-gateway the backends, flow-control observation). Only edge-bridge reaches outside the cluster, to `*.googleapis.com`
 - Tenant hosts (`<tenant_id>.tolo.mercuryksm.net`) are one level below the zone, which Universal SSL does not cover: they need an Advanced Certificate Manager certificate for `*.tolo.mercuryksm.net`, and external-dns has to create the wildcard record
 
 ## Secrets
