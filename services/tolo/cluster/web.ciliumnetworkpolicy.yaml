@@ -1,0 +1,26 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: web
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: web
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+  egress:
+    - toFQDNs:
+        - matchName: pypi.org
+        - matchName: files.pythonhosted.org
+        - matchName: download.pytorch.org
+        - matchName: github.com
+        - matchName: release-assets.githubusercontent.com
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

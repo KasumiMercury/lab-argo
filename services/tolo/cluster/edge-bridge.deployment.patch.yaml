@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edge-bridge
+spec:
+  template:
+    spec:
+      containers:
+        - name: edge-bridge
+          env:
+            - name: FIRESTORE_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: tolo-firebase
+                  key: project-id
+            - name: GOOGLE_CLOUD_PROJECT
+              valueFrom:
+                secretKeyRef:
+                  name: tolo-firebase
+                  key: project-id
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /etc/tolo/firebase/service-account.json
+          volumeMounts:
+            - name: firebase
+              mountPath: /etc/tolo/firebase
+              readOnly: true
+      volumes:
+        - name: firebase
+          secret:
+            secretName: tolo-firebase
+            items:
+              - key: service-account.json
+                path: service-account.json

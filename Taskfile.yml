@@ -347,6 +347,51 @@ tasks:
         sed -i "s/^\( *checksum\/admin-token:\).*/\1 $CHECKSUM/" {{.STATEFULSET}}
       - echo "sealed vaultwarden/vaultwarden-admin -> {{.OUTPUT}}, checksum -> {{.STATEFULSET}}"
 
+  seal:tolo:
+    desc: Seal the TOLO Secret tolo with a new signing key, introspection client secret and database passwords, usable in any namespace
+    vars:
+      OUTPUT: services/tolo/cluster/tolo.sealedsecret.yaml
+    cmds:
+      - mkdir -p {{dir .OUTPUT}}
+      - |
+        SIGNING_KEY="$(openssl ecparam -name prime256v1 -genkey -noout)"
+        export SIGNING_KEY
+        SECRET="$(yq -n '.apiVersion = "v1" | .kind = "Secret"
+          | .metadata.name = "tolo"
+          | .metadata.annotations."sealedsecrets.bitnami.com/cluster-wide" = "true"
+          | .stringData."signing-key.pem" = strenv(SIGNING_KEY)')"
+        for key in introspection-client-secret tenant-management-db-password graph-authoring-db-password observation-db-password operation-db-password; do
+          SECRET="$(printf '%s\n' "$SECRET" | VALUE="$(openssl rand -hex 16)" KEY="$key" yq '.stringData[strenv(KEY)] = strenv(VALUE)')"
+        done
+        printf '%s\n' "$SECRET" | kubeseal --format yaml --scope cluster-wide > {{.OUTPUT}}
+      - echo "sealed tolo (cluster-wide) -> {{.OUTPUT}}"
+
+  seal:tolo-firebase:
+    desc: Seal the TOLO Secret tolo-firebase from the Firebase test project (FIREBASE_PROJECT_ID, FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_APP_ID of its web app, FIREBASE_SERVICE_ACCOUNT_FILE = key file of the edge-bridge service account; prompted when unset), usable in any namespace
+    interactive: true
+    vars:
+      OUTPUT: services/tolo/cluster/tolo-firebase.sealedsecret.yaml
+    cmds:
+      - mkdir -p {{dir .OUTPUT}}
+      - |
+        for v in FIREBASE_PROJECT_ID FIREBASE_API_KEY FIREBASE_AUTH_DOMAIN FIREBASE_APP_ID FIREBASE_SERVICE_ACCOUNT_FILE; do
+          eval "[ -n \"\${$v:-}\" ]" || { printf '%s: ' "$v"; read -r "$v"; }
+          export "$v"
+        done
+        test -f "$FIREBASE_SERVICE_ACCOUNT_FILE" || { echo "not found: $FIREBASE_SERVICE_ACCOUNT_FILE" >&2; exit 1; }
+        FIREBASE_SERVICE_ACCOUNT="$(cat "$FIREBASE_SERVICE_ACCOUNT_FILE")"
+        export FIREBASE_SERVICE_ACCOUNT
+        yq -n '.apiVersion = "v1" | .kind = "Secret"
+          | .metadata.name = "tolo-firebase"
+          | .metadata.annotations."sealedsecrets.bitnami.com/cluster-wide" = "true"
+          | .stringData."project-id" = strenv(FIREBASE_PROJECT_ID)
+          | .stringData."api-key" = strenv(FIREBASE_API_KEY)
+          | .stringData."auth-domain" = strenv(FIREBASE_AUTH_DOMAIN)
+          | .stringData."app-id" = strenv(FIREBASE_APP_ID)
+          | .stringData."service-account.json" = strenv(FIREBASE_SERVICE_ACCOUNT)' \
+          | kubeseal --format yaml --scope cluster-wide > {{.OUTPUT}}
+      - echo "sealed tolo-firebase (cluster-wide) -> {{.OUTPUT}}; add it to the resources of services/tolo/cluster/kustomization.yaml"
+
   backup:sealed-secrets:
     desc: Export the sealed-secrets controller keys, sops-encrypted to the age keys in lab-proxmox/.sops.yaml (OUTPUT=..., default ~/sealed-secrets-keys-<date>.sops.yaml). Keep the file offline and in Vaultwarden, and redo it after the controller adds a key (every 30 days)
     vars:
