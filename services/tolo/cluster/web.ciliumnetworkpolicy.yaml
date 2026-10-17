@@ -18,6 +18,7 @@ spec:
         - matchName: pypi.org
         - matchName: files.pythonhosted.org
         - matchName: download.pytorch.org
+        - matchName: download-r2.pytorch.org
         - matchName: github.com
         - matchName: release-assets.githubusercontent.com
       toPorts:
