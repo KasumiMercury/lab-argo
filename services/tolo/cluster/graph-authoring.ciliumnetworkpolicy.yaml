@@ -1,0 +1,16 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: graph-authoring
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: graph-authoring
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: service-gateway
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

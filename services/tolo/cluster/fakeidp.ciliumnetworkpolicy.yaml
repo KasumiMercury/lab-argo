@@ -1,0 +1,18 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: fakeidp
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: fakeidp
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: service-gateway
+        - matchLabels:
+            app.kubernetes.io/name: edge-bridge
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

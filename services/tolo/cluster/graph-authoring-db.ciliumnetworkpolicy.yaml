@@ -1,0 +1,16 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: graph-authoring-db
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: graph-authoring-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: graph-authoring
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP

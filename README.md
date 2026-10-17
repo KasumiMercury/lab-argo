@@ -42,6 +42,7 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 |---|---|---|---|
 | obsidian-livesync | CouchDB for Obsidian Self-hosted LiveSync, `talaria.mercuryksm.net` | obsidian-livesync | 2 |
 | vaultwarden | Vaultwarden (SQLite on a 2Gi `ceph-rbd` volume), tailnet only at `https://vault.<tailnet>.ts.net`; daily backup to the NAS (`vaultwarden-backup` on `/nfs/k8s`, 30 days) | vaultwarden | 2 |
+| tolo | TOLO verification environment: the base of [tolo-manifest](https://github.com/pj-hoakari/tolo-manifest) pinned by commit, plus the cluster component `services/tolo/cluster` (Secrets, HTTPRoutes, CiliumNetworkPolicies, Firebase and hostname patches). Only web is published, at `tolo.mercuryksm.net` and `*.tolo.mercuryksm.net`; the environment is operated through web only | tolo | 2 |
 
 - `argocd` and `cilium` have no resources finalizer: deleting their Application leaves Argo CD and the CNI running
 - `argocd` adopts the release installed by the lab-proxmox bootstrap, so its chart version must match `version` in lab-proxmox `kubernetes/argocd.yaml`
@@ -67,6 +68,10 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 7. Vaultwarden (see [Vaultwarden](#vaultwarden)):
    - In the tailnet policy, let the operator own `tag:vaultwarden` (`"tag:vaultwarden": ["tag:k8s-operator"]` in `tagOwners`) and grant `tcp:443` on it to the users who need the vault only
    - `docker run --rm -it vaultwarden/server /vaultwarden hash --preset owasp`, then `task seal:vaultwarden` with the printed `ADMIN_TOKEN` → `services/vaultwarden/vaultwarden-admin.sealedsecret.yaml` (also updates the `checksum/admin-token` annotation in `vaultwarden.statefulset.yaml`, which restarts Vaultwarden once synced). Until then `/admin` is disabled
+8. TOLO (see [TOLO](#tolo)):
+   - Create the Cloudflare Access application for `tolo.mercuryksm.net` and `*.tolo.mercuryksm.net` (a login policy; the devices that open the observation pages log in too) before the Application syncs
+   - `task seal:tolo` → `services/tolo/cluster/tolo.sealedsecret.yaml` (generates the signing key, the introspection client secret and the database passwords)
+   - `task seal:tolo-firebase` with the web app settings and the edge-bridge service account key of the Firebase test project → `services/tolo/cluster/tolo-firebase.sealedsecret.yaml`, then add it to `resources` in `services/tolo/cluster/kustomization.yaml`. Until then web and edge-bridge wait for the Secret
 
 ## Reproducing what Argo CD renders
 Tools are pinned in `mise.toml` (`mise install`).
@@ -128,6 +133,13 @@ Prometheus keeps its TSDB there (20Gi, 15 days).
 - No SMTP and no mobile push (the apps sync on open and periodically)
 - Backup: the CronJob `vaultwarden-backup` runs at 03:30 JST next to the Vaultwarden Pod (the RBD volume is ReadWriteOnce), takes a consistent SQLite copy with `vaultwarden backup` and writes `vaultwarden-<UTC time>.tar.gz` (db.sqlite3, attachments, sends, RSA key) to `192.168.110.5:/nfs/k8s/vaultwarden-backup`, deleting archives older than 30 days. The PV is static with Retain, so the archives outlive the PVC and the Application. A failed run fires KubeJobFailed. Run one now: `kubectl -n vaultwarden create job --from=cronjob/vaultwarden-backup backup-manual`
 - Restore: scale the StatefulSet to 0, extract the archive into the data volume (remove `db.sqlite3-wal` and `db.sqlite3-shm` first), `chown -R 1000:1000`, scale back to 1
+
+## TOLO
+`services/tolo/kustomization.yaml` takes the base of tolo-manifest at a fixed commit (`ref`) and adds the component `services/tolo/cluster`, which holds everything specific to this cluster. A preview environment for a tolo-manifest pull request can reuse the component on top of the base of the pull request, in its own namespace: both Secrets are sealed cluster-wide, and the hostnames sit in the HTTPRoutes, `ROOT_DOMAIN` of web and `OBSERVATION_PAGE_URL_TEMPLATE` of observation.
+
+- The model of the crowd detection (`yolo26n.onnx`) is exported by the initContainer `models` of web at every start, with the CPU build of PyTorch (about 1.4 GB of packages, under a minute)
+- The namespace denies all traffic except within itself and to DNS; each workload accepts only its callers, and only web accepts the public Gateway (the databases their service, the internal port 8090 of service-gateway the backends, flow-control observation). web reaches PyPI, the PyTorch index and GitHub for the model, edge-bridge reaches `*.googleapis.com`
+- Tenant hosts (`<tenant_id>.tolo.mercuryksm.net`) are one level below the zone, which Universal SSL does not cover: they need an Advanced Certificate Manager certificate for `*.tolo.mercuryksm.net`, and external-dns has to create the wildcard record
 
 ## Secrets
 - Only SealedSecrets are committed (`*.sealedsecret.yaml`); plaintext `*secret.yaml` files are gitignored

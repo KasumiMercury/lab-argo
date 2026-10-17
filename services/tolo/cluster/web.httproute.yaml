@@ -1,0 +1,15 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: web
+spec:
+  parentRefs:
+    - name: public
+      namespace: public-gateway
+  hostnames:
+    - "tolo.mercuryksm.net"
+    - "*.tolo.mercuryksm.net"
+  rules:
+    - backendRefs:
+        - name: web
+          port: 3000

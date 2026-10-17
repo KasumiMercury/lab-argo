@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: models
+          image: ghcr.io/astral-sh/uv
+          workingDir: /tmp
+          command:
+            - sh
+            - -c
+            - >-
+              uv run --no-project
+              --index https://download.pytorch.org/whl/cpu --index-strategy unsafe-best-match
+              --with ultralytics-opencv-headless==8.4.178
+              --with torch==2.14.1+cpu --with torchvision==0.29.1+cpu
+              --with onnx==1.23.2 --with onnxslim==0.1.98 --with onnxruntime==1.31.0
+              yolo export model=yolo26n.pt format=onnx imgsz=640 simplify=True
+              && cp yolo26n.onnx /models/
+          env:
+            - name: HOME
+              value: /tmp
+            - name: UV_CACHE_DIR
+              value: /tmp/uv
+            - name: YOLO_CONFIG_DIR
+              value: /tmp/yolo
+            - name: YOLO_OFFLINE
+              value: "1"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: models
+              mountPath: /models
+            - name: models-build
+              mountPath: /tmp
+      containers:
+        - name: web
+          env:
+            - name: ROOT_DOMAIN
+              value: tolo.mercuryksm.net
+            - name: FIREBASE_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: tolo-firebase
+                  key: project-id
+            - name: FIREBASE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tolo-firebase
+                  key: api-key
+            - name: FIREBASE_AUTH_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: tolo-firebase
+                  key: auth-domain
+            - name: FIREBASE_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: tolo-firebase
+                  key: app-id
+      volumes:
+        - name: models-build
+          emptyDir:
+            sizeLimit: 4Gi

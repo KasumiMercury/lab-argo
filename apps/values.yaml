@@ -154,3 +154,12 @@ services:
       # The backup Job runs as root with DAC_OVERRIDE to read the data written by the server (NFS no_root_squash)
       pod-security.kubernetes.io/enforce: baseline
       pod-security.kubernetes.io/warn: restricted
+  tolo:
+    namespace: tolo
+    syncWave: "2"
+    finalizer: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+    namespaceLabels:
+      lab.mercuryksm.net/public-gateway: "true"
+      pod-security.kubernetes.io/enforce: restricted

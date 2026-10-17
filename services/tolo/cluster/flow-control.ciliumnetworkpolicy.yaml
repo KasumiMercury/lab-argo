@@ -1,0 +1,16 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: flow-control
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: flow-control
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: observation
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

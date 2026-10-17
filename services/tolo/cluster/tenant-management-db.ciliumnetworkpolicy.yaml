@@ -1,0 +1,16 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: tenant-management-db
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: tenant-management-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: tenant-management
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
