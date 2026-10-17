@@ -3,6 +3,15 @@
   "extends": [
     "config:recommended"
   ],
+  "timezone": "Asia/Tokyo",
+  "schedule": [
+    "* 5-8 * * 6"
+  ],
+  "vulnerabilityAlerts": {
+    "schedule": [
+      "at any time"
+    ]
+  },
   "git-submodules": {
     "enabled": true
   },
@@ -15,6 +24,13 @@
       "matchManagers": ["mise"],
       "matchDepNames": ["kustomize"],
       "enabled": false
+    },
+    {
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "minor and patch updates"
     }
   ]
 }
