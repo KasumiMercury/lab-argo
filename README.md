@@ -71,7 +71,7 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 8. TOLO (see [TOLO](#tolo)):
    - Create the Cloudflare Access application for `tolo.mercuryksm.net` and `*.tolo.mercuryksm.net` (a login policy; the devices that open the observation pages log in too) before the Application syncs
    - `task seal:tolo` → `services/tolo/cluster/tolo.sealedsecret.yaml` (generates the signing key, the introspection client secret and the database passwords)
-   - `task seal:tolo-firebase` with the web app settings and the edge-bridge service account key of the Firebase test project → `services/tolo/cluster/tolo-firebase.sealedsecret.yaml`, then add it to `resources` in `services/tolo/cluster/kustomization.yaml`. Until then web and edge-bridge wait for the Secret
+   - `task seal:tolo-firebase` with the web app settings and the edge-bridge service account key of the Firebase test project → `services/tolo/cluster/tolo-firebase.sealedsecret.yaml`
 
 ## Reproducing what Argo CD renders
 Tools are pinned in `mise.toml` (`mise install`).

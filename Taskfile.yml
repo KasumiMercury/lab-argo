@@ -390,7 +390,7 @@ tasks:
           | .stringData."app-id" = strenv(FIREBASE_APP_ID)
           | .stringData."service-account.json" = strenv(FIREBASE_SERVICE_ACCOUNT)' \
           | kubeseal --format yaml --scope cluster-wide > {{.OUTPUT}}
-      - echo "sealed tolo-firebase (cluster-wide) -> {{.OUTPUT}}; add it to the resources of services/tolo/cluster/kustomization.yaml"
+      - echo "sealed tolo-firebase (cluster-wide) -> {{.OUTPUT}}"
 
   backup:sealed-secrets:
     desc: Export the sealed-secrets controller keys, sops-encrypted to the age keys in lab-proxmox/.sops.yaml (OUTPUT=..., default ~/sealed-secrets-keys-<date>.sops.yaml). Keep the file offline and in Vaultwarden, and redo it after the controller adds a key (every 30 days)
