@@ -24,6 +24,9 @@ patches:
   - path: web.deployment.patch.yaml
   - path: edge-bridge.deployment.patch.yaml
   - path: observation.deployment.patch.yaml
+  - path: db.statefulset.patch.yaml
+    target:
+      kind: StatefulSet
 images:
   - name: busybox
     newTag: 1.38.0
