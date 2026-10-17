@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tolo-models
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadOnlyMany"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: tolo
+    name: tolo-models
+  csi:
+    driver: nfs.csi.k8s.io
+    volumeHandle: 192.168.110.5#nfs/k8s#tolo-models
+    readOnly: true
+    volumeAttributes:
+      server: 192.168.110.5
+      share: /nfs/k8s
