@@ -32,7 +32,7 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 | alloy-talos | alloy (hostNetwork DaemonSet receiving the Talos service and kernel logs on 127.0.0.1:6050/6051, `namespace="talos"`, `container=<service>`) | logging | 2 |
 | public-gateway | Gateway `public` (Cilium), LB IPAM pool, cloudflared | public-gateway | 0 |
 | external-dns | external-dns (Cloudflare, mercuryksm.net) | external-dns | 1 |
-| ceph-csi-rbd | ceph-csi-rbd + StorageClass `ceph-rbd` (default; Proxmox Ceph, pool `k8s`, Retain), VolumeSnapshotClass `ceph-rbd` | ceph-csi-rbd | 0 |
+| ceph-csi-rbd | ceph-csi-rbd + StorageClass `ceph-rbd` (default; Proxmox Ceph, pool `k8s`, Retain) and `ceph-rbd-ephemeral` (same pool, Delete), VolumeSnapshotClass `ceph-rbd` | ceph-csi-rbd | 0 |
 | coredns | PodDisruptionBudget (`minAvailable: 1`) for the CoreDNS installed by Talos; its spread across nodes is set by the lab-proxmox bootstrap | kube-system | 0 |
 | cilium-monitoring | PodMonitors for the Cilium agent, operator, Envoy and Hubble (dashboards come with the cilium chart), HTTP visibility policies (`l7-visibility-*.ciliumnetworkpolicy.yaml`) | kube-system | 2 |
 
@@ -121,6 +121,7 @@ external-dns only touches records that carry its TXT ownership entry (owner `lab
 
 ## Storage
 `ceph-rbd` provisions RBD images in the Proxmox Ceph pool `k8s` through the Ceph user `client.k8s`, which can only use that pool. Its reclaim policy is Retain: deleting a PVC keeps the image (`rbd -p k8s ls` on a Proxmox host, remove it by hand).
+`ceph-rbd-ephemeral` is the same but with the reclaim policy Delete, for data that should go with its PVC (the databases of the TOLO verification environment).
 
 `nfs-csi` provisions volumes on the NAS export `192.168.110.5:/nfs/k8s`, each in `<namespace>-<pvc>-<pv>`.
 The export must allow the k8s VMs (`192.168.110.0/24`) and let root create directories (`no_root_squash`).
@@ -139,6 +140,7 @@ Prometheus keeps its TSDB there (20Gi, 15 days).
 `services/tolo/kustomization.yaml` takes the base of tolo-manifest at a fixed commit (`ref`) and adds the component `services/tolo/cluster`, which holds everything specific to this cluster. A preview environment for a tolo-manifest pull request can reuse the component on top of the base of the pull request, in its own namespace: both Secrets are sealed cluster-wide, and the hostnames sit in the HTTPRoutes, `ROOT_DOMAIN` of web and `OBSERVATION_PAGE_URL_TEMPLATE` of observation.
 
 - The initContainer `models` of web copies the model of the crowd detection from the NAS (`/nfs/k8s/tolo-models/yolo26n.onnx`, the static PV `tolo-models`) to the `models` volume of the base at every start, so the NAS is needed only when web starts. To change the model, replace the file and restart web. A preview environment needs a PV of its own with the same share, since a PV binds to one PVC
+- The databases use `ceph-rbd-ephemeral` and delete their PVCs with the StatefulSet, so deleting the Application or a database StatefulSet deletes the data and the RBD image. Argo CD recreates a deleted StatefulSet with an empty database; restart the service that uses it (`kubectl -n tolo rollout restart deploy/<service>`) to migrate again (and, for tenant-management, to seed the fixed tenant)
 - The namespace denies all traffic except within itself and to DNS; each workload accepts only its callers, and only web accepts the public Gateway (the databases their service, the internal port 8090 of service-gateway the backends, flow-control observation). Only edge-bridge reaches outside the cluster, to `*.googleapis.com`
 - Tenant hosts (`<tenant_id>.tolo.mercuryksm.net`) are one level below the zone, which Universal SSL does not cover: they need an Advanced Certificate Manager certificate for `*.tolo.mercuryksm.net`, and external-dns has to create the wildcard record
 

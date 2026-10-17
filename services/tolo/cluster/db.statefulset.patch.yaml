@@ -1,0 +1,8 @@
+- op: add
+  path: /spec/volumeClaimTemplates/0/spec/storageClassName
+  value: ceph-rbd-ephemeral
+- op: add
+  path: /spec/persistentVolumeClaimRetentionPolicy
+  value:
+    whenDeleted: Delete
+    whenScaled: Delete
