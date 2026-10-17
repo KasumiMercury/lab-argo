@@ -12,6 +12,8 @@ spec:
             app.kubernetes.io/name: service-gateway
         - matchLabels:
             app.kubernetes.io/name: edge-bridge
+        - matchLabels:
+            app.kubernetes.io/name: web
       toPorts:
         - ports:
             - port: "8080"
