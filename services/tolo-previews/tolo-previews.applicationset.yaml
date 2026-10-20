@@ -1,0 +1,121 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tolo-previews
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - pullRequest:
+        github:
+          owner: pj-hoakari
+          repo: tolo-manifest
+          labels:
+            - preview
+        requeueAfterSeconds: 120
+  template:
+    metadata:
+      name: tolo-preview
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/pj-hoakari/tolo-manifest.git
+        targetRevision: main
+        path: base
+      destination:
+        server: https://kubernetes.default.svc
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          limit: 5
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+        syncOptions:
+          - SkipDryRunOnMissingResource=true
+  templatePatch: |
+    {{- $slot := "" }}
+    {{- range .labels }}{{ if hasPrefix "slot-" . }}{{ $slot = trimPrefix "slot-" . }}{{ end }}{{ end }}
+    {{- $name := printf "tolo-s%s" $slot }}
+    {{- $host := printf "s%s.tolo.mercuryksm.net" $slot }}
+    metadata:
+      name: {{ $name }}
+      labels:
+        lab.mercuryksm.net/group: services
+        lab.mercuryksm.net/source: kustomize
+      annotations:
+        lab.mercuryksm.net/pull-request: https://github.com/pj-hoakari/tolo-manifest/pull/{{ .number }}
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      source:
+        targetRevision: {{ .head_sha }}
+        kustomize:
+          namespace: {{ $name }}
+          components:
+            - https://github.com/KasumiMercury/lab-argo//services/tolo/cluster?ref=main
+            - https://github.com/KasumiMercury/lab-argo//services/tolo/preview?ref=main
+          patches:
+            - target:
+                kind: HTTPRoute
+                name: web
+              patch: |-
+                - op: replace
+                  path: /spec/hostnames
+                  value:
+                    - {{ $host }}
+                    - "*.{{ $host }}"
+            - target:
+                kind: Deployment
+                name: web
+              patch: |-
+                apiVersion: apps/v1
+                kind: Deployment
+                metadata:
+                  name: web
+                spec:
+                  template:
+                    spec:
+                      containers:
+                        - name: web
+                          env:
+                            - name: ROOT_DOMAIN
+                              value: {{ $host }}
+            - target:
+                kind: ConfigMap
+                name: tolo-fixture
+              patch: |-
+                - op: replace
+                  path: /data/tenant-id
+                  value: "{{ printf "%016d" (atoi .number) }}"
+                - op: replace
+                  path: /data/event-id
+                  value: "{{ printf "e%015d" (atoi .number) }}"
+            - target:
+                kind: PersistentVolume
+                name: tolo-models
+              options:
+                allowNameChange: true
+              patch: |-
+                - op: replace
+                  path: /metadata/name
+                  value: tolo-models-{{ $name }}
+                - op: replace
+                  path: /spec/claimRef/namespace
+                  value: {{ $name }}
+                - op: replace
+                  path: /spec/csi/volumeHandle
+                  value: "192.168.110.5#nfs/k8s#tolo-models#{{ $name }}"
+            - target:
+                kind: PersistentVolumeClaim
+                name: tolo-models
+              patch: |-
+                - op: replace
+                  path: /spec/volumeName
+                  value: tolo-models-{{ $name }}
+      destination:
+        namespace: {{ $name }}

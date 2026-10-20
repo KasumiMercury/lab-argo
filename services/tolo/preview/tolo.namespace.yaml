@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tolo
+  labels:
+    lab.mercuryksm.net/public-gateway: "true"
+    pod-security.kubernetes.io/enforce: restricted
