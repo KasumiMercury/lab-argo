@@ -43,6 +43,7 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 | obsidian-livesync | CouchDB for Obsidian Self-hosted LiveSync, `talaria.mercuryksm.net` | obsidian-livesync | 2 |
 | vaultwarden | Vaultwarden (SQLite on a 2Gi `ceph-rbd` volume), tailnet only at `https://vault.<tailnet>.ts.net`; daily backup to the NAS (`vaultwarden-backup` on `/nfs/k8s`, 30 days) | vaultwarden | 2 |
 | tolo | TOLO verification environment: the base of [tolo-manifest](https://github.com/pj-hoakari/tolo-manifest) pinned by commit, plus the cluster component `services/tolo/cluster` (Secrets, HTTPRoutes, CiliumNetworkPolicies, Firebase and hostname patches). Only web is published, at `tolo.mercuryksm.net` and `*.tolo.mercuryksm.net`; the environment is operated through web only | tolo | 2 |
+| tolo-previews | ApplicationSet of the TOLO preview environments, one Application `tolo-s<k>` per open tolo-manifest pull request labelled `preview` (see [TOLO previews](#tolo-previews)) | argocd | 3 |
 
 - `argocd` and `cilium` have no resources finalizer: deleting their Application leaves Argo CD and the CNI running
 - `argocd` adopts the release installed by the lab-proxmox bootstrap, so its chart version must match `version` in lab-proxmox `kubernetes/argocd.yaml`
@@ -143,6 +144,13 @@ Prometheus keeps its TSDB there (20Gi, 15 days).
 - The databases use `ceph-rbd-ephemeral` and delete their PVCs with the StatefulSet, so deleting the Application or a database StatefulSet deletes the data and the RBD image. Argo CD recreates a deleted StatefulSet with an empty database; restart the service that uses it (`kubectl -n tolo rollout restart deploy/<service>`) to migrate again (and, for tenant-management, to seed the fixed tenant)
 - The namespace denies all traffic except within itself and to DNS; each workload accepts only its callers, and only web accepts the public Gateway (the databases their service, the internal port 8090 of service-gateway the backends, flow-control observation). Only edge-bridge reaches outside the cluster, to `*.googleapis.com`
 - Tenant hosts (`<tenant_id>.tolo.mercuryksm.net`) are one level below the zone, which Universal SSL does not cover: they need an Advanced Certificate Manager certificate for `*.tolo.mercuryksm.net`, and external-dns has to create the wildcard record
+
+### TOLO previews
+A comment `/preview` on a pull request of a TOLO service repository publishes an amd64 image of its head and asks tolo-manifest for a preview environment; tolo-manifest opens a pull request on `preview/<repo>-<number>` that sets the image tag, labelled `preview` and `slot-<k>` (`/preview stop`, closing the pull request, or 7 days without a push or `/preview` closes it). The ApplicationSet `services/tolo-previews` polls the open `preview` pull requests every 2 minutes (no GitHub token: tolo-manifest is public, and 30 requests an hour stay under the unauthenticated limit) and renders each as the Application and namespace `tolo-s<k>`:
+
+- The source is the base of the pull request head, plus the components `services/tolo/cluster` and `services/tolo/preview` of this repository's `main` (the latter adds the namespace with its labels, so deleting the Application deletes the namespace, its databases and their RBD images). A change of the components reaches a running preview on its next push or a hard refresh, since Argo CD caches the rendering per source revision
+- Patches per preview: the HTTPRoute hostnames `s<k>.tolo.mercuryksm.net` and `*.s<k>.tolo.mercuryksm.net`, `ROOT_DOMAIN` of web, the PV `tolo-models-tolo-s<k>` (a PV binds to one PVC) and the fixed tenant and event of the ConfigMap `tolo-fixture`, derived from the tolo-manifest pull request number so that a slot used again starts with a fresh tenant in Firestore
+- Slots `s1` to `s5` are covered by an Advanced Certificate Manager certificate for `*.s1.tolo.mercuryksm.net` to `*.s5.tolo.mercuryksm.net` and by the Cloudflare Access application of `tolo.mercuryksm.net`; more slots need both extended first
 
 ## Secrets
 - Only SealedSecrets are committed (`*.sealedsecret.yaml`); plaintext `*secret.yaml` files are gitignored

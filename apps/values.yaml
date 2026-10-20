@@ -163,3 +163,6 @@ services:
     namespaceLabels:
       lab.mercuryksm.net/public-gateway: "true"
       pod-security.kubernetes.io/enforce: restricted
+  tolo-previews:
+    namespace: argocd
+    syncWave: "3"
