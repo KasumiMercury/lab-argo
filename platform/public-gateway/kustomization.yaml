@@ -24,7 +24,7 @@ configMapGenerator:
       - config.yaml=files/cloudflared.yaml
 images:
   - name: cloudflare/cloudflared
-    newTag: 2026.10.1
+    newTag: 2026.10.3
 transformers:
   # Kustomize does not know these custom resources are cluster-scoped and would give them the namespace above
   - |-
