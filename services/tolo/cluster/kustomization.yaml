@@ -19,11 +19,16 @@ resources:
   - operation.ciliumnetworkpolicy.yaml
   - operation-db.ciliumnetworkpolicy.yaml
   - nats.ciliumnetworkpolicy.yaml
+  - guest.ciliumnetworkpolicy.yaml
+  - guest-db.ciliumnetworkpolicy.yaml
+  - realtime.ciliumnetworkpolicy.yaml
+  - realtime-db.ciliumnetworkpolicy.yaml
   - flow-control.ciliumnetworkpolicy.yaml
   - edge-bridge.ciliumnetworkpolicy.yaml
 patches:
   - path: web.deployment.patch.yaml
   - path: edge-bridge.deployment.patch.yaml
+  - path: realtime.deployment.patch.yaml
   - path: db.statefulset.patch.yaml
     target:
       kind: StatefulSet

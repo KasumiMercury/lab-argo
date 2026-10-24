@@ -1,0 +1,25 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: realtime
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: realtime
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: service-gateway
+        - matchLabels:
+            app.kubernetes.io/name: push-relay
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    - toFQDNs:
+        - matchPattern: "*.googleapis.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

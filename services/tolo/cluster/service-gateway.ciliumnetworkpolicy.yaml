@@ -18,6 +18,10 @@ spec:
             app.kubernetes.io/name: observation
         - matchLabels:
             app.kubernetes.io/name: operation
+        - matchLabels:
+            app.kubernetes.io/name: guest
+        - matchLabels:
+            app.kubernetes.io/name: realtime
       toPorts:
         - ports:
             - port: "8080"
@@ -31,6 +35,8 @@ spec:
             app.kubernetes.io/name: observation
         - matchLabels:
             app.kubernetes.io/name: operation
+        - matchLabels:
+            app.kubernetes.io/name: guest
       toPorts:
         - ports:
             - port: "8090"
