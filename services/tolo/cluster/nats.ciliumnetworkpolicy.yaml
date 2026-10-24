@@ -12,6 +12,8 @@ spec:
             app.kubernetes.io/name: operation
         - matchLabels:
             app.kubernetes.io/name: observation
+        - matchLabels:
+            app.kubernetes.io/name: push-relay
       toPorts:
         - ports:
             - port: "4222"

@@ -1,0 +1,18 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: guest
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: guest
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: service-gateway
+        - matchLabels:
+            app.kubernetes.io/name: push-relay
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

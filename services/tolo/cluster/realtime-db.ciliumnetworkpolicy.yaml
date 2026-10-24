@@ -1,0 +1,16 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: realtime-db
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: realtime-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: realtime
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
