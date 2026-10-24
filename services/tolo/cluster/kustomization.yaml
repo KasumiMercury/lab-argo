@@ -18,6 +18,7 @@ resources:
   - observation-db.ciliumnetworkpolicy.yaml
   - operation.ciliumnetworkpolicy.yaml
   - operation-db.ciliumnetworkpolicy.yaml
+  - nats.ciliumnetworkpolicy.yaml
   - flow-control.ciliumnetworkpolicy.yaml
   - edge-bridge.ciliumnetworkpolicy.yaml
 patches:
