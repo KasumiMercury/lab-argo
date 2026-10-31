@@ -30,6 +30,8 @@ spec:
           env:
             - name: ROOT_DOMAIN
               value: tolo.mercuryksm.net
+            - name: AUTH_MOCKING_ALLOWED_ROOT_DOMAINS
+              value: tolo.mercuryksm.net
             - name: FIREBASE_PROJECT_ID
               valueFrom:
                 secretKeyRef:
