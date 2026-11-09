@@ -49,6 +49,9 @@ kube-prometheus-stack:
           static_configs:
             - targets: ["192.168.110.181:2381"]
       retentionSize: 18GB
+      additionalArgs:
+        - name: storage.tsdb.max-block-duration
+          value: 2h
       # Not NFS: Prometheus does not support its TSDB on non-POSIX filesystems
       storageSpec:
         volumeClaimTemplate:
