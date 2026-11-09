@@ -20,4 +20,4 @@ resources:
 images:
   # The server and the backup CronJob
   - name: vaultwarden/server
-    newTag: 1.37.4
+    newTag: 1.37.5
