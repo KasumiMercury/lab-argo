@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: otel
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: alloy
+      port:
+        name: otlp-http
+  tls:
+    - hosts:
+        - otel

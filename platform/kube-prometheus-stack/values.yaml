@@ -36,6 +36,7 @@ kube-prometheus-stack:
       podMonitorSelectorNilUsesHelmValues: false
       ruleSelectorNilUsesHelmValues: false
       probeSelectorNilUsesHelmValues: false
+      enableOTLPReceiver: true
       retention: 15d
       # Peak ~1Gi; WAL replay at startup and compaction need headroom over the steady state
       resources:

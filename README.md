@@ -28,7 +28,7 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 | tailscale | tailscale-operator | tailscale | 0 |
 | kube-prometheus-stack | kube-prometheus-stack; Alertmanager sends the Loki ruler alerts and every warning/critical Prometheus alert to Slack #k8s-alert | monitoring | 1 |
 | loki | loki (grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki`, dashboard `Logs overview`, ruler alerts on error spikes of the Kubernetes components and Cilium (`rules/k8s-alerts.yaml`) | logging | 1 |
-| alloy | alloy (one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`; drops recurring lines that never need action) | logging | 2 |
+| alloy | alloy (one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`; drops recurring lines that never need action); OTLP over HTTP on the tailnet at `https://otel.<tailnet>.ts.net` (Claude Code telemetry; drops `user.email`, metrics to Prometheus' OTLP receiver, events to Loki's OTLP endpoint, where `service_name=~"claude-code.*"` is kept 400 days) | logging | 2 |
 | alloy-talos | alloy (hostNetwork DaemonSet receiving the Talos service and kernel logs on 127.0.0.1:6050/6051, `namespace="talos"`, `container=<service>`) | logging | 2 |
 | public-gateway | Gateway `public` (Cilium), LB IPAM pool, cloudflared | public-gateway | 0 |
 | external-dns | external-dns (Cloudflare, mercuryksm.net) | external-dns | 1 |

@@ -22,6 +22,11 @@ loki:
             period: 24h
     limits_config:
       retention_period: 14d
+      retention_stream:
+        - selector: '{service_name=~"claude-code.*"}'
+          priority: 1
+          period: 400d
+      max_query_length: 32d
       # Alloy may replay older lines after a restart; keep them within the retention
       reject_old_samples_max_age: 7d
     compactor:

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: alloy
-description: Grafana Alloy shipping pod logs and Kubernetes events to Loki
+description: Grafana Alloy shipping pod logs and Kubernetes events to Loki, and OTLP telemetry to Prometheus and Loki
 type: application
 version: 0.1.0
 dependencies:
