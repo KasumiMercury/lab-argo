@@ -15,6 +15,11 @@ alloy:
         memory: 192Mi
       limits:
         memory: 512Mi
+    extraPorts:
+      - name: otlp-http
+        port: 4318
+        targetPort: 4318
+        protocol: TCP
     configMap:
       content: |
         logging {
@@ -164,6 +169,50 @@ alloy:
         loki.write "default" {
           endpoint {
             url = "http://loki.logging.svc:3100/loki/api/v1/push"
+          }
+        }
+
+        // OTLP ---------------------------------------------------------------
+
+        otelcol.receiver.otlp "default" {
+          http {
+            endpoint = "0.0.0.0:4318"
+          }
+
+          output {
+            metrics = [otelcol.processor.attributes.drop_email.input]
+            logs    = [otelcol.processor.attributes.drop_email.input]
+          }
+        }
+
+        otelcol.processor.attributes "drop_email" {
+          action {
+            key    = "user.email"
+            action = "delete"
+          }
+
+          output {
+            metrics = [otelcol.processor.batch.default.input]
+            logs    = [otelcol.processor.batch.default.input]
+          }
+        }
+
+        otelcol.processor.batch "default" {
+          output {
+            metrics = [otelcol.exporter.otlphttp.prometheus.input]
+            logs    = [otelcol.exporter.otlphttp.loki.input]
+          }
+        }
+
+        otelcol.exporter.otlphttp "prometheus" {
+          client {
+            endpoint = "http://kube-prometheus-stack-prometheus.monitoring.svc:9090/api/v1/otlp"
+          }
+        }
+
+        otelcol.exporter.otlphttp "loki" {
+          client {
+            endpoint = "http://loki.logging.svc:3100/otlp"
           }
         }
 
