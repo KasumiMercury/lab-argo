@@ -11,6 +11,7 @@ vars:
     sh: find platform services -mindepth 2 -maxdepth 2 -name Chart.yaml -exec dirname {} \; | sort
   # kubeconfig written by the lab-proxmox playbook (override with KUBECONFIG=...)
   KUBECONFIG: '{{.KUBECONFIG | default "../lab-proxmox/ansible/artifacts/k8s.kubeconfig"}}'
+  TOLO_SECRET_KEYS: signing-key.pem introspection-client-secret tenant-management-db-password graph-authoring-db-password observation-db-password operation-db-password guest-db-password realtime-db-password jwk-private-key.pem seed-users.json idp-db-password web-auth-db-password web-auth-secret console-ui-client-secret edge-page-client-secret observation-connection-client-secret
 
 env:
   KUBECONFIG: '{{.KUBECONFIG}}'
@@ -108,6 +109,7 @@ tasks:
         vars:
           APP: '{{base .ITEM}}'
       - task render:cilium >/dev/null
+      - task: check:tolo-secrets
 
   lint:component:
     internal: true
@@ -348,23 +350,55 @@ tasks:
       - echo "sealed vaultwarden/vaultwarden-admin -> {{.OUTPUT}}, checksum -> {{.STATEFULSET}}"
 
   seal:tolo:
-    desc: Seal the TOLO Secret tolo with a new signing key, introspection client secret and database passwords, usable in any namespace
+    desc: Seal the TOLO Secret tolo with every value the cluster generates (signing keys, client secrets, database passwords and the seed user owner, whose id and tenant come from the tolo-manifest ref in services/tolo/kustomization.yaml), usable in any namespace. KEYS=<key>,... seals only those keys into the existing file and keeps the others. The environment variable OWNER_PASSWORD sets the password of owner (8 characters to 72 bytes), random when unset
     vars:
-      OUTPUT: services/tolo/cluster/tolo.sealedsecret.yaml
+      OUTPUT: '{{.OUTPUT | default "services/tolo/cluster/tolo.sealedsecret.yaml"}}'
     cmds:
       - mkdir -p {{dir .OUTPUT}}
       - |
-        SIGNING_KEY="$(openssl ecparam -name prime256v1 -genkey -noout)"
-        export SIGNING_KEY
+        KEYS="$(printf '%s' '{{.KEYS}}' | tr ',' ' ')"
+        for key in $KEYS; do
+          case " {{.TOLO_SECRET_KEYS}} " in *" $key "*) ;; *) echo "unknown key: $key (one of {{.TOLO_SECRET_KEYS}})" >&2; exit 1 ;; esac
+        done
+        test -z "$KEYS" || test -f {{.OUTPUT}} || { echo "{{.OUTPUT}} not found: seal every key first (no KEYS)" >&2; exit 1; }
         SECRET="$(yq -n '.apiVersion = "v1" | .kind = "Secret"
           | .metadata.name = "tolo"
-          | .metadata.annotations."sealedsecrets.bitnami.com/cluster-wide" = "true"
-          | .stringData."signing-key.pem" = strenv(SIGNING_KEY)')"
-        for key in introspection-client-secret tenant-management-db-password graph-authoring-db-password observation-db-password operation-db-password; do
-          SECRET="$(printf '%s\n' "$SECRET" | VALUE="$(openssl rand -hex 16)" KEY="$key" yq '.stringData[strenv(KEY)] = strenv(VALUE)')"
+          | .metadata.annotations."sealedsecrets.bitnami.com/cluster-wide" = "true"')"
+        for key in ${KEYS:-{{.TOLO_SECRET_KEYS}}}; do
+          case "$key" in
+            signing-key.pem) VALUE="$(openssl ecparam -name prime256v1 -genkey -noout)" ;;
+            jwk-private-key.pem) VALUE="$(openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048)" ;;
+            seed-users.json)
+              REF="$(yq '.resources[0]' services/tolo/kustomization.yaml | sed 's/.*?ref=//')"
+              RAW="https://raw.githubusercontent.com/pj-hoakari/tolo-manifest/$REF"
+              TENANT="$(curl -fsSL "$RAW/base/kustomization.yaml" | yq '.configMapGenerator[] | select(.name == "tolo-fixture") | .literals[] | select(test("^tenant-id=")) | sub("^tenant-id="; "")')"
+              ID="$(curl -fsSL "$RAW/components/idp/kustomization.yaml" | yq '.configMapGenerator[] | select(.name == "tolo-fixture") | .literals[] | select(test("^owner-sub=")) | sub("^owner-sub="; "")')"
+              test -n "$TENANT" && test -n "$ID" || { echo "tenant-id or owner-sub not found at tolo-manifest $REF" >&2; exit 1; }
+              PASSWORD="${OWNER_PASSWORD:-$(openssl rand -hex 16)}"
+              test "${#PASSWORD}" -ge 8 && test "$(printf '%s' "$PASSWORD" | wc -c)" -le 72 || { echo "OWNER_PASSWORD must be 8 characters to 72 bytes" >&2; exit 1; }
+              VALUE="$(ID="$ID" TENANT="$TENANT" PASSWORD="$PASSWORD" yq -n -o json '.users = [{"id": strenv(ID), "tenantId": strenv(TENANT), "username": "owner", "password": strenv(PASSWORD)}]')"
+              ;;
+            *) VALUE="$(openssl rand -hex 32)" ;;
+          esac
+          SECRET="$(printf '%s\n' "$SECRET" | VALUE="$VALUE" KEY="$key" yq '.stringData[strenv(KEY)] = strenv(VALUE)')"
         done
-        printf '%s\n' "$SECRET" | kubeseal --format yaml --scope cluster-wide > {{.OUTPUT}}
+        if [ -n "$KEYS" ]; then
+          printf '%s\n' "$SECRET" | kubeseal --format yaml --scope cluster-wide --merge-into {{.OUTPUT}}
+        else
+          printf '%s\n' "$SECRET" | kubeseal --format yaml --scope cluster-wide > {{.OUTPUT}}
+        fi
       - echo "sealed tolo (cluster-wide) -> {{.OUTPUT}}"
+
+  check:tolo-secrets:
+    desc: Check that the keys of the Secret tolo the TOLO services read, the keys seal:tolo generates and the keys sealed in services/tolo/cluster/tolo.sealedsecret.yaml are the same
+    deps: [repos]
+    cmds:
+      - |
+        USED="$(task render APP=tolo | yq -N '[.. | select(has("secretKeyRef")) | .secretKeyRef | select(.name == "tolo") | .key] + [.. | select(has("secret")) | .secret | select(.secretName == "tolo") | .items[].key] | .[]' | sort -u)"
+        GENERATED="$(printf '%s\n' {{.TOLO_SECRET_KEYS}} | sort -u)"
+        SEALED="$(yq '.spec.encryptedData | keys | .[]' services/tolo/cluster/tolo.sealedsecret.yaml | sort -u)"
+        test "$USED" = "$GENERATED" || { echo "keys read by the services and TOLO_SECRET_KEYS differ:" >&2; diff <(printf '%s\n' "$USED") <(printf '%s\n' "$GENERATED") >&2; exit 1; }
+        test "$USED" = "$SEALED" || { echo "keys read by the services and the sealed keys differ:" >&2; diff <(printf '%s\n' "$USED") <(printf '%s\n' "$SEALED") >&2; exit 1; }
 
   seal:tolo-firebase:
     desc: Seal the TOLO Secret tolo-firebase from the Firebase test project (FIREBASE_PROJECT_ID, FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_APP_ID of its web app, FIREBASE_SERVICE_ACCOUNT_FILE = key file of the edge-bridge service account; prompted when unset), usable in any namespace
@@ -391,32 +425,6 @@ tasks:
           | .stringData."service-account.json" = strenv(FIREBASE_SERVICE_ACCOUNT)' \
           | kubeseal --format yaml --scope cluster-wide > {{.OUTPUT}}
       - echo "sealed tolo-firebase (cluster-wide) -> {{.OUTPUT}}"
-
-  seal:tolo-idp:
-    desc: Seal the TOLO Secret tolo-idp with a new IdP signing key, client secrets, database passwords and the seed user owner (its id and tenant from the tolo-manifest ref in services/tolo/kustomization.yaml)
-    vars:
-      OUTPUT: services/tolo/idp/tolo-idp.sealedsecret.yaml
-    cmds:
-      - mkdir -p {{dir .OUTPUT}}
-      - |
-        REF="$(yq '.resources[0]' services/tolo/kustomization.yaml | sed 's/.*?ref=//')"
-        RAW="https://raw.githubusercontent.com/pj-hoakari/tolo-manifest/$REF"
-        TENANT="$(curl -fsSL "$RAW/base/kustomization.yaml" | yq '.configMapGenerator[] | select(.name == "tolo-fixture") | .literals[] | select(test("^tenant-id=")) | sub("^tenant-id="; "")')"
-        ID="$(curl -fsSL "$RAW/components/idp/kustomization.yaml" | yq '.configMapGenerator[] | select(.name == "tolo-fixture") | .literals[] | select(test("^owner-sub=")) | sub("^owner-sub="; "")')"
-        test -n "$TENANT" && test -n "$ID" || { echo "tenant-id or owner-sub not found at tolo-manifest $REF" >&2; exit 1; }
-        JWK="$(openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048)"
-        SEED_USERS="$(ID="$ID" TENANT="$TENANT" PASSWORD="$(openssl rand -hex 16)" yq -n -o json '.users = [{"id": strenv(ID), "tenantId": strenv(TENANT), "username": "owner", "password": strenv(PASSWORD)}]')"
-        export JWK SEED_USERS
-        SECRET="$(yq -n '.apiVersion = "v1" | .kind = "Secret"
-          | .metadata.name = "tolo-idp"
-          | .metadata.annotations."sealedsecrets.bitnami.com/cluster-wide" = "true"
-          | .stringData."jwk-private-key.pem" = strenv(JWK)
-          | .stringData."seed-users.json" = strenv(SEED_USERS)')"
-        for key in idp-db-password web-auth-db-password web-auth-secret console-ui-client-secret edge-page-client-secret observation-connection-client-secret; do
-          SECRET="$(printf '%s\n' "$SECRET" | VALUE="$(openssl rand -hex 32)" KEY="$key" yq '.stringData[strenv(KEY)] = strenv(VALUE)')"
-        done
-        printf '%s\n' "$SECRET" | kubeseal --format yaml --scope cluster-wide > {{.OUTPUT}}
-      - echo "sealed tolo-idp (cluster-wide) -> {{.OUTPUT}}"
 
   backup:sealed-secrets:
     desc: Export the sealed-secrets controller keys, sops-encrypted to the age keys in lab-proxmox/.sops.yaml (OUTPUT=..., default ~/sealed-secrets-keys-<date>.sops.yaml). Keep the file offline and in Vaultwarden, and redo it after the controller adds a key (every 30 days)
