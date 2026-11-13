@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - tolo-idp.sealedsecret.yaml
+  - tolo-idp.httproute.yaml
+  - tolo-idp.ciliumnetworkpolicy.yaml
+  - tolo-idp-db.ciliumnetworkpolicy.yaml
+  - tolo-idp-redis.ciliumnetworkpolicy.yaml
+  - web-auth-db.ciliumnetworkpolicy.yaml
+  - tenant-management-from-idp.ciliumnetworkpolicy.yaml
+  - idp-issuer.ciliumnetworkpolicy.yaml
+configMapGenerator:
+  - name: tolo-idp-public
+    literals:
+      - issuer=https://auth.tolo.mercuryksm.net
+      - web-origin=https://tolo.mercuryksm.net

@@ -1,0 +1,16 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: tolo-idp-redis
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: tolo-idp-redis
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: tolo-idp
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP

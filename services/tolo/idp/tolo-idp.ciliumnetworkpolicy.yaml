@@ -1,0 +1,28 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: tolo-idp
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: tolo-idp
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: service-gateway
+        - matchLabels:
+            app.kubernetes.io/name: edge-bridge
+        - matchLabels:
+            app.kubernetes.io/name: web
+        - matchLabels:
+            app.kubernetes.io/name: seed
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

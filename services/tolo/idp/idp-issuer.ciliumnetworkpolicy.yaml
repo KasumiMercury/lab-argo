@@ -1,0 +1,19 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: idp-issuer
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - service-gateway
+          - web
+  egress:
+    - toFQDNs:
+        - matchName: auth.tolo.mercuryksm.net
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
