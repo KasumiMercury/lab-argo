@@ -118,6 +118,9 @@ kube-prometheus-stack:
         memory: 1Gi
     # Shared by the dashboard and datasource sidecars
     prune: true
+    deleteDatasources:
+      - name: Prometheus
+        orgId: 1
     sidecar:
       datasources:
         name: VictoriaMetrics
