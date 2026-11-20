@@ -3,17 +3,34 @@ kube-prometheus-stack:
   # etcd metrics on :2381 of the control-plane node (patches/controlplane.yaml of lab-proxmox
   # terraform/modules/talos_cluster). The static pods carry k8s-app, not the chart's default component label.
   # kube-proxy is replaced by Cilium.
+  kubeApiServer:
+    serviceMonitor:
+      authorization: &vmagentToken
+        type: Bearer
+        credentials:
+          name: vmagent-k8s-token
+          key: token
+  kubelet:
+    serviceMonitor:
+      authorization: *vmagentToken
+  coreDns:
+    serviceMonitor:
+      authorization: *vmagentToken
   kubeControllerManager:
     service:
       selector:
         k8s-app: kube-controller-manager
+    serviceMonitor:
+      authorization: *vmagentToken
   kubeScheduler:
     service:
       selector:
         k8s-app: kube-scheduler
+    serviceMonitor:
+      authorization: *vmagentToken
   # etcd is a Talos service, not a pod. The chart would scrape it through an Endpoints object, which Argo CD
-  # never syncs (excluded by default), so Prometheus scrapes the control-plane node (k8s-hod) directly
-  # (additionalScrapeConfigs, job kube-etcd); kubeEtcd stays enabled for the etcd rules and dashboard.
+  # never syncs (excluded by default), so vmagent scrapes the control-plane node (k8s-hod) directly
+  # (VMStaticScrape kube-etcd in platform/victoria-metrics); kubeEtcd stays enabled for the etcd rules and dashboard.
   kubeEtcd:
     service:
       enabled: false
@@ -22,6 +39,8 @@ kube-prometheus-stack:
   kubeProxy:
     enabled: false
   defaultRules:
+    rules:
+      prometheus: false
     disabled:
       # They ask whether every Pod's requests fit on the nodes left after the largest one fails. Here the largest
       # node (k8s-hod) is the only control plane, so nothing is rescheduled when it fails, and the HA branch of
@@ -30,42 +49,10 @@ kube-prometheus-stack:
       KubeCPUOvercommit: true
 
   prometheus:
-    prometheusSpec:
-      # Pick up ServiceMonitors/PodMonitors/rules from every Application, not only this release
-      serviceMonitorSelectorNilUsesHelmValues: false
-      podMonitorSelectorNilUsesHelmValues: false
-      ruleSelectorNilUsesHelmValues: false
-      probeSelectorNilUsesHelmValues: false
-      enableOTLPReceiver: true
-      retention: 15d
-      # Peak ~1Gi; WAL replay at startup and compaction need headroom over the steady state
-      resources:
-        requests:
-          cpu: 50m
-          memory: 1280Mi
-        limits:
-          memory: 2Gi
-      additionalScrapeConfigs:
-        - job_name: kube-etcd
-          static_configs:
-            - targets: ["192.168.110.181:2381"]
-      retentionSize: 18GB
-      additionalArgs:
-        - name: storage.tsdb.max-block-duration
-          value: 2h
-      # Not NFS: Prometheus does not support its TSDB on non-POSIX filesystems
-      storageSpec:
-        volumeClaimTemplate:
-          spec:
-            storageClassName: ceph-rbd
-            accessModes:
-              - ReadWriteOnce
-            resources:
-              requests:
-                storage: 20Gi
+    enabled: false
 
   # Slack #k8s-alert gets the alerts of the Loki ruler (notify="k8s-alert", platform/loki/rules/k8s-alerts.yaml)
-  # and every warning or critical alert of Prometheus: the stack's default rules and the PrometheusRules of
+  # and every warning or critical alert of vmalert: the stack's default rules and the PrometheusRules of
   # the Applications (CouchDB, ...). Info alerts (CPUThrottlingHigh, KubeQuotaAlmostFull, ...) and the
   # always-firing Watchdog/InfoInhibitor go nowhere. Posted through the Slack App shared with pve-grafana and
   # Zabbix (lab-proxmox, scope chat:write; invite the bot to the channel); its bot token is the Secret
@@ -131,6 +118,8 @@ kube-prometheus-stack:
         memory: 1Gi
     # Shared by the dashboard and datasource sidecars
     sidecar:
+      datasources:
+        url: http://vmsingle-k8s.monitoring.svc:8428
       resources:
         requests:
           cpu: 10m

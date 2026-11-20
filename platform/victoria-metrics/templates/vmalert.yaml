@@ -1,0 +1,21 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMAlert
+metadata:
+  name: k8s
+spec:
+  selectAllByDefault: true
+  evaluationInterval: 30s
+  datasource:
+    url: http://vmsingle-k8s.{{ .Release.Namespace }}.svc:8428
+  remoteWrite:
+    url: http://vmsingle-k8s.{{ .Release.Namespace }}.svc:8428
+  remoteRead:
+    url: http://vmsingle-k8s.{{ .Release.Namespace }}.svc:8428
+  notifiers:
+    - url: http://kube-prometheus-stack-alertmanager.{{ .Release.Namespace }}.svc:9093
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 128Mi

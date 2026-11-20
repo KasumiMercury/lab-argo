@@ -26,9 +26,10 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 | snapshot-controller | snapshot-controller (piraeus; external-snapshotter CRDs and controller) | kube-system | -2 |
 | csi-driver-nfs | csi-driver-nfs + StorageClass `nfs-csi`, VolumeSnapshotClass `nfs-csi` | kube-system | -1 |
 | tailscale | tailscale-operator | tailscale | 0 |
-| kube-prometheus-stack | kube-prometheus-stack; Alertmanager sends the Loki ruler alerts and every warning/critical Prometheus alert to Slack #k8s-alert | monitoring | 1 |
-| loki | loki (grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki`, dashboard `Logs overview`, ruler alerts on error spikes of the Kubernetes components and Cilium (`rules/k8s-alerts.yaml`); Loki has no authentication, so CiliumNetworkPolicy `loki` admits only Alloy, Grafana, Prometheus and the nodes (alloy-talos runs on the host network) | logging | 1 |
-| alloy | alloy (one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`; drops recurring lines that never need action); OTLP over HTTP on the tailnet at `https://otel.<tailnet>.ts.net` (Claude Code telemetry; drops `user.email`, metrics to Prometheus' OTLP receiver, events to Loki's OTLP endpoint, where `service_name=~"claude-code.*"` is kept 400 days), dashboard `Claude Code` | logging | 2 |
+| kube-prometheus-stack | kube-prometheus-stack without Prometheus (Grafana, Alertmanager, exporters, default rules and ServiceMonitors); Alertmanager sends the Loki ruler alerts and every warning/critical vmalert alert to Slack #k8s-alert | monitoring | 1 |
+| victoria-metrics | VictoriaMetrics operator (converts ServiceMonitors, PodMonitors and PrometheusRules), VMSingle `k8s` (20Gi `ceph-rbd` volume, 15-day retention, Grafana datasource `Prometheus`), VMAgent `k8s` and VMAlert `k8s` (sends to the Alertmanager of kube-prometheus-stack) | monitoring | 1 |
+| loki | loki (grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki`, dashboard `Logs overview`, ruler alerts on error spikes of the Kubernetes components and Cilium (`rules/k8s-alerts.yaml`); Loki has no authentication, so CiliumNetworkPolicy `loki` admits only Alloy, Grafana, vmagent and the nodes (alloy-talos runs on the host network) | logging | 1 |
+| alloy | alloy (one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`; drops recurring lines that never need action); OTLP over HTTP on the tailnet at `https://otel.<tailnet>.ts.net` (Claude Code telemetry; drops `user.email`, metrics to VictoriaMetrics' OTLP endpoint, events to Loki's OTLP endpoint, where `service_name=~"claude-code.*"` is kept 400 days), dashboard `Claude Code` | logging | 2 |
 | alloy-talos | alloy (hostNetwork DaemonSet receiving the Talos service and kernel logs on 127.0.0.1:6050/6051, `namespace="talos"`, `container=<service>`) | logging | 2 |
 | public-gateway | Gateway `public` (Cilium), LB IPAM pool, cloudflared | public-gateway | 0 |
 | external-dns | external-dns (Cloudflare, mercuryksm.net) | external-dns | 1 |
@@ -128,7 +129,7 @@ external-dns only touches records that carry its TXT ownership entry (owner `lab
 `nfs-csi` provisions volumes on the NAS export `192.168.110.5:/nfs/k8s`, each in `<namespace>-<pvc>-<pv>`.
 The export must allow the k8s VMs (`192.168.110.0/24`) and let root create directories (`no_root_squash`).
 The Proxmox storage `strix0` (`/nfs/proxmox`) is a different export, reachable from the Proxmox hosts (`192.168.20.0/24`) only.
-Prometheus keeps its TSDB there (20Gi, 15 days).
+VictoriaMetrics keeps its data on `ceph-rbd` (20Gi, 15 days).
 
 ## Vaultwarden
 `https://vault.<tailnet>.ts.net` is served by a Tailscale Ingress without Funnel, so only tailnet devices that the policy grants reach it; there is no HTTPRoute on the public Gateway. Clients (browser extension, mobile app) need Tailscale connected to sync; the offline cache keeps the vault readable.

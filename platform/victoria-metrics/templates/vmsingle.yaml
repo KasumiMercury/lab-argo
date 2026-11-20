@@ -1,0 +1,21 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMSingle
+metadata:
+  name: k8s
+spec:
+  retentionPeriod: 15d
+  extraArgs:
+    opentelemetry.usePrometheusNaming: "true"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+  storage:
+    storageClassName: ceph-rbd
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 20Gi

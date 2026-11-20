@@ -1,4 +1,4 @@
-# Default deny for the namespace: CouchDB is reached only through the public Gateway and by Prometheus,
+# Default deny for the namespace: CouchDB is reached only through the public Gateway and by vmagent,
 # and makes no outbound connections.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy

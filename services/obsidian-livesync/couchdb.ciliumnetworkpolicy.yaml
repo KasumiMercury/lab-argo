@@ -21,7 +21,7 @@ spec:
     - fromEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: monitoring
-            app.kubernetes.io/name: prometheus
+            app.kubernetes.io/name: vmagent
       toPorts:
         - ports:
             - port: "17986"
