@@ -89,7 +89,7 @@ loki:
   test:
     enabled: false
 
-  # Scraped by kube-prometheus-stack (selects every ServiceMonitor), dashboards picked up by the Grafana
+  # Scraped by vmagent (platform/victoria-metrics, converts every ServiceMonitor), dashboards picked up by the Grafana
   # sidecar (grafana_dashboard label, all namespaces)
   monitoring:
     serviceMonitor:

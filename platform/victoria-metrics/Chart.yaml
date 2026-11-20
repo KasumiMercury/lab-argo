@@ -1,0 +1,9 @@
+apiVersion: v2
+name: victoria-metrics
+description: VictoriaMetrics operator, single-node VictoriaMetrics, vmagent and vmalert for the Talos cluster
+type: application
+version: 0.1.0
+dependencies:
+  - name: victoria-metrics-operator
+    version: 0.68.2
+    repository: oci://ghcr.io/victoriametrics/helm-charts

@@ -197,14 +197,14 @@ alloy:
 
         otelcol.processor.batch "default" {
           output {
-            metrics = [otelcol.exporter.otlphttp.prometheus.input]
+            metrics = [otelcol.exporter.otlphttp.victoriametrics.input]
             logs    = [otelcol.exporter.otlphttp.loki.input]
           }
         }
 
-        otelcol.exporter.otlphttp "prometheus" {
+        otelcol.exporter.otlphttp "victoriametrics" {
           client {
-            endpoint = "http://kube-prometheus-stack-prometheus.monitoring.svc:9090/api/v1/otlp"
+            endpoint = "http://vmsingle-k8s.monitoring.svc:8428/opentelemetry"
           }
         }
 

@@ -72,6 +72,14 @@ platform:
       # CRDs are too large for client-side apply
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
+  victoria-metrics:
+    namespace: monitoring
+    releaseName: victoria-metrics
+    syncWave: "1"
+    finalizer: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
   loki:
     namespace: logging
     releaseName: loki
