@@ -565,14 +565,14 @@
       "title": "Active time (Prometheus, last 15 days at most)",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "victoriametrics"
       },
       "targets": [
         {
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "victoriametrics"
           },
           "expr": "sum by (type) (max_over_time(claude_code_active_time_seconds_total[$__range]))",
           "legendFormat": "active {{type}}",
@@ -612,14 +612,14 @@
       "title": "Lines of code (Prometheus, last 15 days at most)",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "victoriametrics"
       },
       "targets": [
         {
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "victoriametrics"
           },
           "expr": "sum by (type) (max_over_time(claude_code_lines_of_code_count_total[$__range]))",
           "legendFormat": "{{type}}",
