@@ -7,8 +7,8 @@ labels:
       app.kubernetes.io/managed-by: argocd
     includeSelectors: false
 resources:
-  - https://github.com/pj-hoakari/tolo-manifest//base?ref=3d9c28f4dcf234c93d3892913a5e0c1a3cb75c20
+  - https://github.com/pj-hoakari/tolo-manifest//base?ref=5d633055a9c961b654ddf6b0d4efa09ab0252cbe
 components:
-  - https://github.com/pj-hoakari/tolo-manifest//components/idp?ref=3d9c28f4dcf234c93d3892913a5e0c1a3cb75c20
+  - https://github.com/pj-hoakari/tolo-manifest//components/idp?ref=5d633055a9c961b654ddf6b0d4efa09ab0252cbe
   - cluster
   - idp
