@@ -117,8 +117,11 @@ kube-prometheus-stack:
       limits:
         memory: 1Gi
     # Shared by the dashboard and datasource sidecars
+    prune: true
     sidecar:
       datasources:
+        name: VictoriaMetrics
+        uid: victoriametrics
         url: http://vmsingle-k8s.monitoring.svc:8428
       resources:
         requests:
