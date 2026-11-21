@@ -20,6 +20,10 @@ alloy:
         port: 4318
         targetPort: 4318
         protocol: TCP
+      - name: otlp-prometheus
+        port: 9090
+        targetPort: 9090
+        protocol: TCP
     configMap:
       content: |
         logging {
@@ -199,6 +203,30 @@ alloy:
           output {
             metrics = [otelcol.exporter.otlphttp.victoriametrics.input]
             logs    = [otelcol.exporter.otlphttp.loki.input]
+          }
+        }
+
+        otelcol.receiver.otlp "prometheus_path" {
+          http {
+            endpoint         = "0.0.0.0:9090"
+            metrics_url_path = "/api/v1/otlp/v1/metrics"
+          }
+
+          output {
+            metrics = [otelcol.processor.transform.prometheus_job.input]
+          }
+        }
+
+        otelcol.processor.transform "prometheus_job" {
+          error_mode = "ignore"
+
+          metric_statements {
+            context    = "resource"
+            statements = [`set(attributes["job"], attributes["service.name"])`]
+          }
+
+          output {
+            metrics = [otelcol.processor.batch.default.input]
           }
         }
 
