@@ -1,0 +1,17 @@
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: http://alloy.logging.svc:4318
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: POD_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: OTEL_RESOURCE_ATTRIBUTES
+    value: k8s.namespace.name=$(POD_NAMESPACE)
