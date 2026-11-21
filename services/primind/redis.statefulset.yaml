@@ -17,6 +17,12 @@ spec:
       containers:
         - name: redis
           image: redis
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 256Mi
           args:
             - redis-server
             - --appendonly
