@@ -1,9 +1,0 @@
-apiVersion: v2
-name: kube-prometheus-stack
-description: Prometheus Operator CRDs only, until the Application is removed
-type: application
-version: 0.1.0
-dependencies:
-  - name: kube-prometheus-stack
-    version: 92.22.0
-    repository: oci://ghcr.io/prometheus-community/charts

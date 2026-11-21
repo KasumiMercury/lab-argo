@@ -63,15 +63,14 @@ platform:
     syncOptions:
       # SealedSecret CRD may not exist yet on the first sync
       - SkipDryRunOnMissingResource=true
-  kube-prometheus-stack:
+  prometheus-operator-crds:
     namespace: monitoring
-    releaseName: kube-prometheus-stack
-    syncWave: "1"
+    releaseName: prometheus-operator-crds
+    syncWave: "0"
     finalizer: false
     syncOptions:
       # CRDs are too large for client-side apply
       - ServerSideApply=true
-      - SkipDryRunOnMissingResource=true
   victoria-metrics:
     namespace: monitoring
     releaseName: victoria-metrics
@@ -86,7 +85,7 @@ platform:
     syncWave: "1"
     finalizer: true
     syncOptions:
-      # ServiceMonitor CRD comes with kube-prometheus-stack in the same wave
+      # ServiceMonitor CRD comes with prometheus-operator-crds in an earlier wave
       - SkipDryRunOnMissingResource=true
   alloy:
     namespace: logging
