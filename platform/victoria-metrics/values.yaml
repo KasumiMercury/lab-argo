@@ -17,6 +17,10 @@ victoria-metrics-k8s-stack:
       limits:
         memory: 256Mi
 
+  defaultDashboards:
+    annotations:
+      grafana_folder: Kubernetes
+
   defaultRules:
     rules:
       # They ask whether every Pod's requests fit on the nodes left after the largest one fails. Here the largest
@@ -172,6 +176,9 @@ victoria-metrics-k8s-stack:
     sidecar:
       dashboards:
         searchNamespace: ALL
+        folderAnnotation: grafana_folder
+        provider:
+          foldersFromFilesStructure: true
       resources:
         requests:
           cpu: 10m
