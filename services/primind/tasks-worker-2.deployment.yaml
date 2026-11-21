@@ -18,6 +18,12 @@ spec:
       containers:
         - name: tasks-worker-2
           image: primind-tasks-worker
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
           env:
             - name: ENV
               value: production

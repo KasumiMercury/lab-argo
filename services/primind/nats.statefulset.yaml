@@ -17,6 +17,12 @@ spec:
       containers:
         - name: nats
           image: nats
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 256Mi
           args:
             - --jetstream
             - --store_dir=/data

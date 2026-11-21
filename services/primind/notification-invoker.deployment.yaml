@@ -18,6 +18,12 @@ spec:
       containers:
         - name: notification-invoker
           image: ghcr.io/kasumimercury/primind-notification-invoker
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
           envFrom:
             - secretRef:
                 name: primind
