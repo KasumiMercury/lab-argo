@@ -96,6 +96,8 @@ loki:
       enabled: true
     dashboards:
       enabled: true
+      annotations:
+        grafana_folder: Logging
       # Bloom, object storage and the *-resources dashboards only apply to distributed installs
       loki-bloom-build:
         enabled: false
