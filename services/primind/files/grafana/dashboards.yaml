@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: "Primind Dashboards"
+    orgId: 1
+    folder: "Primind"
+    folderUid: "primind"
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

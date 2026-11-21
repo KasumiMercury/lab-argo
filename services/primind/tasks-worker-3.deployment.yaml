@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tasks-worker-3
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tasks-worker-3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tasks-worker-3
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: tasks-worker-3
+          image: primind-tasks-worker
+          env:
+            - name: ENV
+              value: production
+            - name: SERVICE_NAME
+              value: taskqueue-worker-cancel
+            - name: REDIS_ADDR
+              value: redis:6379
+            - name: QUEUE_NAME
+              value: remind-cancel
+            - name: TARGET_ENDPOINT
+              value: http://time-mgmt:8080/api/v1/reminds/cancel
+            - name: RETRY_COUNT
+              value: "3"
+            - name: WORKER_CONCURRENCY
+              value: "10"
+            - name: REQUEST_TIMEOUT
+              value: 30s
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: jaeger:4318
+            - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+              value: prometheus:9090

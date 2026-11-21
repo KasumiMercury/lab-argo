@@ -174,3 +174,11 @@ services:
   tolo-previews:
     namespace: argocd
     syncWave: "3"
+  primind:
+    namespace: primind
+    syncWave: "2"
+    finalizer: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+    namespaceLabels:
+      pod-security.kubernetes.io/enforce: baseline

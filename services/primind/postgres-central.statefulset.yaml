@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-central
+spec:
+  serviceName: postgres-central
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres-central
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres-central
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: postgres
+          image: postgres
+          env:
+            - name: POSTGRES_USER
+              value: primind_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: primind
+                  key: POSTGRES_CENTRAL_PASSWORD
+            - name: POSTGRES_DB
+              value: primind_db
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - primind_user
+                - -d
+                - primind_db
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: ceph-rbd
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi

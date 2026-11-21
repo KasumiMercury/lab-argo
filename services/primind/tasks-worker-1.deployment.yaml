@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tasks-worker-1
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tasks-worker-1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tasks-worker-1
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: tasks-worker-1
+          image: primind-tasks-worker
+          env:
+            - name: ENV
+              value: production
+            - name: SERVICE_NAME
+              value: taskqueue-worker-invoke
+            - name: REDIS_ADDR
+              value: redis:6379
+            - name: QUEUE_NAME
+              value: invoke
+            - name: TARGET_ENDPOINT
+              value: http://notification-invoker:8080/notify
+            - name: RETRY_COUNT
+              value: "3"
+            - name: WORKER_CONCURRENCY
+              value: "10"
+            - name: REQUEST_TIMEOUT
+              value: 30s
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: jaeger:4318
+            - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+              value: prometheus:9090
