@@ -8,6 +8,8 @@ labels:
     includeSelectors: false
 resources:
   - https://github.com/pj-hoakari/tolo-manifest//base?ref=f9612b73ff91837510829376d27fc867a8b1f131
+  - edge-bridge.httproute.yaml
+  - edge-bridge-public.ciliumnetworkpolicy.yaml
 components:
   - https://github.com/pj-hoakari/tolo-manifest//components/idp?ref=f9612b73ff91837510829376d27fc867a8b1f131
   - cluster
