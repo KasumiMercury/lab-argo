@@ -13,7 +13,7 @@ resources:
   # The metrics ports and Grafana dashboards are enabled in cilium/values.yaml; the scrape side lives here because
   # the Ansible bootstrap installs Cilium before the Prometheus Operator CRDs exist, so the chart's ServiceMonitors
   # cannot be used. PodMonitors select the pods directly: the agent and operator have no metrics Service.
-  # kube-prometheus-stack's Prometheus selects every PodMonitor in every namespace.
+  # vmagent selects every PodMonitor in every namespace (converted by the VictoriaMetrics operator).
   # The chart's dashboards select series by pod label (k8s_app="cilium", io_cilium_app="operator"), so the
   # PodMonitors copy those labels onto the targets (podTargetLabels). Every series gets cluster="lab", which the
   # Hubble per-namespace dashboards filter on (label_values(cilium_version, cluster)).

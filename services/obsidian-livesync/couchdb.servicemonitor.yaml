@@ -1,4 +1,4 @@
-# Monitoring for CouchDB: scraped by kube-prometheus-stack (its Prometheus selects every ServiceMonitor and
+# Monitoring for CouchDB: scraped by vmagent (the VictoriaMetrics operator converts every ServiceMonitor and
 # PrometheusRule), dashboard loaded by the Grafana sidecar (grafana_dashboard label, all namespaces).
 # Running out of space on the volume is covered by KubePersistentVolumeFillingUp and restarts by
 # KubePodCrashLooping from the stack's default rules.

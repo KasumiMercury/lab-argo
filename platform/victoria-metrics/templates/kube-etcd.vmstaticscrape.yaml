@@ -1,0 +1,9 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMStaticScrape
+metadata:
+  name: kube-etcd
+spec:
+  jobName: kube-etcd
+  targetEndpoints:
+    - targets:
+        - 192.168.110.181:2381

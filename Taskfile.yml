@@ -181,7 +181,7 @@ tasks:
     desc: Seal the Grafana admin credentials (GRAFANA_ADMIN_USER default admin, GRAFANA_ADMIN_PASSWORD prompted when unset)
     interactive: true
     vars:
-      OUTPUT: platform/kube-prometheus-stack/templates/grafana-admin.sealedsecret.yaml
+      OUTPUT: platform/victoria-metrics/templates/grafana-admin.sealedsecret.yaml
     cmds:
       - mkdir -p {{dir .OUTPUT}}
       - |
@@ -198,7 +198,7 @@ tasks:
     desc: Seal the GitHub OAuth App Grafana logs in with (GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET, prompted when unset; callback https://grafana.<tailnet>.ts.net/login/github)
     interactive: true
     vars:
-      OUTPUT: platform/kube-prometheus-stack/templates/grafana-github.sealedsecret.yaml
+      OUTPUT: platform/victoria-metrics/templates/grafana-github.sealedsecret.yaml
     cmds:
       - mkdir -p {{dir .OUTPUT}}
       - |
@@ -217,7 +217,7 @@ tasks:
     desc: Seal the Slack bot token Alertmanager posts with (SLACK_BOT_TOKEN, prompted when unset; the Slack App shared with lab-proxmox's vault_slack_bot_token)
     interactive: true
     vars:
-      OUTPUT: platform/kube-prometheus-stack/templates/alertmanager-slack.sealedsecret.yaml
+      OUTPUT: platform/victoria-metrics/templates/alertmanager-slack.sealedsecret.yaml
     cmds:
       - mkdir -p {{dir .OUTPUT}}
       - |

@@ -67,7 +67,7 @@ platform:
     namespace: monitoring
     releaseName: kube-prometheus-stack
     syncWave: "1"
-    finalizer: true
+    finalizer: false
     syncOptions:
       # CRDs are too large for client-side apply
       - ServerSideApply=true
