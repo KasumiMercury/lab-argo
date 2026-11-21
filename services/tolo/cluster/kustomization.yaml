@@ -6,6 +6,7 @@ resources:
   - tolo-models.persistentvolume.yaml
   - tolo-models.persistentvolumeclaim.yaml
   - web.httproute.yaml
+  - edge-bridge.httproute.yaml
   - default-deny.ciliumnetworkpolicy.yaml
   - web.ciliumnetworkpolicy.yaml
   - service-gateway.ciliumnetworkpolicy.yaml

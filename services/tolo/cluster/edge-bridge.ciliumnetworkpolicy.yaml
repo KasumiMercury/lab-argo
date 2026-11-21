@@ -7,6 +7,12 @@ spec:
     matchLabels:
       app.kubernetes.io/name: edge-bridge
   ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8787"
+              protocol: TCP
     - fromEndpoints:
         - matchLabels:
             app.kubernetes.io/name: web
