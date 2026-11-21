@@ -426,6 +426,30 @@ tasks:
           | kubeseal --format yaml --scope cluster-wide > {{.OUTPUT}}
       - echo "sealed tolo-firebase (cluster-wide) -> {{.OUTPUT}}"
 
+  seal:primind:
+    desc: Seal the primind Secrets from the .env of its Docker Compose (PRIMIND_ENV_FILE, every key into the Secret primind) and the FCM service account key (PRIMIND_GCP_CREDENTIALS_FILE, into primind-gcp-credentials); prompted when unset
+    interactive: true
+    vars:
+      OUTPUT: services/primind/primind.sealedsecret.yaml
+      GCP_OUTPUT: services/primind/primind-gcp-credentials.sealedsecret.yaml
+    cmds:
+      - |
+        for v in PRIMIND_ENV_FILE PRIMIND_GCP_CREDENTIALS_FILE; do
+          eval "[ -n \"\${$v:-}\" ]" || { printf '%s: ' "$v"; read -r "$v"; }
+          test -f "$(eval echo "\$$v")" || { echo "not found: $v" >&2; exit 1; }
+        done
+        keys=$(sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' "$PRIMIND_ENV_FILE")
+        secret=$(yq -n '.apiVersion = "v1" | .kind = "Secret" | .metadata.name = "primind" | .metadata.namespace = "primind"')
+        for k in $keys; do
+          secret=$(K="$k" V="$(set -a; . "$PRIMIND_ENV_FILE"; printenv "$k")" yq '.stringData[strenv(K)] = strenv(V)' <<<"$secret")
+        done
+        kubeseal --format yaml <<<"$secret" > {{.OUTPUT}}
+        GCP_CREDENTIALS="$(cat "$PRIMIND_GCP_CREDENTIALS_FILE")" yq -n '.apiVersion = "v1" | .kind = "Secret"
+          | .metadata.name = "primind-gcp-credentials" | .metadata.namespace = "primind"
+          | .stringData."gcp-credentials.json" = strenv(GCP_CREDENTIALS)' \
+          | kubeseal --format yaml > {{.GCP_OUTPUT}}
+      - echo "sealed primind/primind -> {{.OUTPUT}}, primind/primind-gcp-credentials -> {{.GCP_OUTPUT}}"
+
   backup:sealed-secrets:
     desc: Export the sealed-secrets controller keys, sops-encrypted to the age keys in lab-proxmox/.sops.yaml (OUTPUT=..., default ~/sealed-secrets-keys-<date>.sops.yaml). Keep the file offline and in Vaultwarden, and redo it after the controller adds a key (every 30 days)
     vars:

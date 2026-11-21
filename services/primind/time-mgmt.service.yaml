@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: time-mgmt
+spec:
+  selector:
+    app.kubernetes.io/name: time-mgmt
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

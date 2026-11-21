@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: throttling
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: throttling
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: throttling
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: throttling
+          image: ghcr.io/kasumimercury/primind-notification-throttling
+          envFrom:
+            - secretRef:
+                name: primind
+          env:
+            - name: ENV
+              value: production
+            - name: SERVICE_NAME
+              value: notification-throttling
+            - name: REMIND_TIME_MANAGEMENT_URL
+              value: http://time-mgmt:8080
+            - name: PRIMIND_TASKS_URL
+              value: http://tasks-api:8080
+            - name: TASK_QUEUE_NAME
+              value: invoke
+            - name: REDIS_ADDR
+              value: redis:6379
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: jaeger:4318
+            - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+              value: prometheus:9090
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            grpc:
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            grpc:
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            initialDelaySeconds: 60

@@ -1,0 +1,116 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: primind
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: primind
+      app.kubernetes.io/managed-by: argocd
+    includeSelectors: false
+resources:
+  - primind.sealedsecret.yaml
+  - primind-gcp-credentials.sealedsecret.yaml
+  - default-deny.ciliumnetworkpolicy.yaml
+  - internet.ciliumnetworkpolicy.yaml
+  - cloudflared-api.deployment.yaml
+  - central-backend.deployment.yaml
+  - central-backend.service.yaml
+  - time-mgmt.deployment.yaml
+  - time-mgmt.service.yaml
+  - throttling.deployment.yaml
+  - throttling.service.yaml
+  - notification-invoker.deployment.yaml
+  - notification-invoker.service.yaml
+  - nats-bridge.deployment.yaml
+  - tasks-api.deployment.yaml
+  - tasks-api.service.yaml
+  - tasks-worker-1.deployment.yaml
+  - tasks-worker-2.deployment.yaml
+  - tasks-worker-3.deployment.yaml
+  - scheduler.deployment.yaml
+  - postgres-central.statefulset.yaml
+  - postgres-central.service.yaml
+  - postgres-time-mgmt.statefulset.yaml
+  - postgres-time-mgmt.service.yaml
+  - redis.statefulset.yaml
+  - redis.service.yaml
+  - nats.statefulset.yaml
+  - nats.service.yaml
+  - jaeger.deployment.yaml
+  - jaeger.service.yaml
+  - prometheus.statefulset.yaml
+  - prometheus.service.yaml
+  - grafana.statefulset.yaml
+  - grafana.service.yaml
+  - asynqmon.deployment.yaml
+  - asynqmon.service.yaml
+configMapGenerator:
+  - name: central-backend-migrations
+    files:
+      - files/migrations/central-backend/20251129031948.sql
+      - files/migrations/central-backend/20251129065657.sql
+      - files/migrations/central-backend/20251209025428.sql
+      - files/migrations/central-backend/20251210140018.sql
+      - files/migrations/central-backend/20251210144522.sql
+      - files/migrations/central-backend/20251214144921.sql
+      - files/migrations/central-backend/20251224015409.sql
+      - files/migrations/central-backend/20260127142517.sql
+      - files/migrations/central-backend/atlas.sum
+  - name: time-mgmt-migrations
+    files:
+      - files/migrations/time-mgmt/20251217081542.sql
+      - files/migrations/time-mgmt/20251228100304.sql
+      - files/migrations/time-mgmt/20260109114532.sql
+      - files/migrations/time-mgmt/atlas.sum
+  - name: nats-bridge
+    files:
+      - config.json=files/nats-bridge.json
+  - name: prometheus
+    files:
+      - prometheus.yml=files/prometheus.yml
+  - name: grafana-datasources
+    files:
+      - files/grafana/datasources.yaml
+  - name: grafana-dashboard-providers
+    files:
+      - files/grafana/dashboards.yaml
+  - name: grafana-dashboards
+    files:
+      - dashboards/services-overview.json
+      - dashboards/throttle-overview.json
+images:
+  - name: ghcr.io/kasumimercury/primind-central-backend
+    newTag: 0.2.0
+  - name: ghcr.io/kasumimercury/primind-remind-time-mgmt
+    newTag: 0.2.0
+  - name: ghcr.io/kasumimercury/primind-notification-throttling
+    newTag: 0.2.0
+  - name: ghcr.io/kasumimercury/primind-notification-invoker
+    newTag: 0.2.0
+  - name: ghcr.io/kasumimercury/primind-nats-bridge
+    newTag: 0.2.0
+  - name: primind-tasks-api
+    newName: ghcr.io/kasumimercury/primind-tasks
+    newTag: 0.2.0-api
+  - name: primind-tasks-worker
+    newName: ghcr.io/kasumimercury/primind-tasks
+    newTag: 0.2.0-worker
+  - name: cloudflare/cloudflared
+    newTag: 2026.10.7
+  - name: arigaio/atlas
+    newTag: 1.4.1
+  - name: postgres
+    newTag: "18.6"
+  - name: redis
+    newTag: 8.10.2
+  - name: nats
+    newTag: 2.10.29-alpine
+  - name: jaegertracing/jaeger
+    newTag: 2.23.0
+  - name: prom/prometheus
+    newTag: v3.16.0
+  - name: grafana/grafana
+    newTag: 13.3.1
+  - name: hibiken/asynqmon
+    newTag: 0.7.2
+  - name: curlimages/curl
+    newTag: 8.23.0

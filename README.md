@@ -45,6 +45,7 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 | vaultwarden | Vaultwarden (SQLite on a 2Gi `ceph-rbd` volume), tailnet only at `https://vault.<tailnet>.ts.net`; daily backup to the NAS (`vaultwarden-backup` on `/nfs/k8s`, 30 days) | vaultwarden | 2 |
 | tolo | TOLO verification environment: the base of [tolo-manifest](https://github.com/pj-hoakari/tolo-manifest) pinned by commit, plus the cluster component `services/tolo/cluster` (Secrets, HTTPRoutes, CiliumNetworkPolicies, Firebase and hostname patches). Only web is published, at `tolo.mercuryksm.net` and `*.tolo.mercuryksm.net`; the environment is operated through web only | tolo | 2 |
 | tolo-previews | ApplicationSet of the TOLO preview environments, one Application `tolo-s<k>` per open tolo-manifest pull request labelled `preview` (see [TOLO previews](#tolo-previews)) | argocd | 3 |
+| primind | Backend of primind (the services of `compose.prod.yaml` in primind-root except web, which runs on Cloudflare Workers), published at `primind-api.mercuryksm.net` by its own remotely-managed tunnel (see [primind](#primind)) | primind | 2 |
 
 - `argocd` and `cilium` have no resources finalizer: deleting their Application leaves Argo CD and the CNI running
 - `argocd` adopts the release installed by the lab-proxmox bootstrap, so its chart version must match `version` in lab-proxmox `kubernetes/argocd.yaml`
@@ -76,6 +77,7 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
    - Create a second Access application for `auth.tolo.mercuryksm.net` alone with a Bypass policy for everyone: the IdP serves the login page to browsers, and service-gateway and web fetch its discovery, keys and tokens from the same URL
    - `task seal:tolo-firebase` with the web app settings and the edge-bridge service account key of the Firebase test project → `services/tolo/cluster/tolo-firebase.sealedsecret.yaml`
    - Put the model of the crowd detection on the NAS as `/nfs/k8s/tolo-models/yolo26n.onnx`, readable by everyone (export it as in tolo-web `docs/setup-for-detection-model.md`)
+9. `task seal:primind` with the `.env` of the primind Compose and the FCM service account key → `services/primind/primind.sealedsecret.yaml`, `services/primind/primind-gcp-credentials.sealedsecret.yaml`
 
 ## Reproducing what Argo CD renders
 Tools are pinned in `mise.toml` (`mise install`).
@@ -165,3 +167,10 @@ A comment `/preview` on a pull request of a TOLO service repository publishes an
 - `task backup:sealed-secrets` writes every controller key to `~/sealed-secrets-keys-<date>.sops.yaml`, encrypted with sops to the age keys in `../lab-proxmox/.sops.yaml` (only `data` is encrypted, so the key names stay readable). Keep it offline and in Vaultwarden
 - The controller adds a new key every 30 days and keeps the old ones, so take a new backup after each renewal
 - `task restore:sealed-secrets FILE=<backup>` applies the keys and restarts the controller
+
+## primind
+`services/primind` runs the backend of primind as it ran with `compose.prod.yaml` on the VM `primind`: the same images, the same Service names, and every key of its `.env` in the Secret `primind` (loaded with `envFrom` by the services that read the `.env`). Migrations run with atlas as an initContainer of central-backend and time-mgmt from `files/migrations`.
+
+- `cloudflared-api` connects to the remotely-managed tunnel of `CLOUDFLARE_TUNNEL_TOKEN_API`, whose ingress (in the Cloudflare dashboard) sends `primind-api.mercuryksm.net` to `http://central-backend:8080`. Only one environment may run a connector of this tunnel, or Cloudflare balances requests across two databases
+- The databases, Redis, NATS, Prometheus and Grafana keep their data on `ceph-rbd` (`data-<statefulset>-0`)
+- Grafana, Jaeger, Prometheus and asynqmon have ClusterIP Services only: `kubectl -n primind port-forward svc/grafana 3000`

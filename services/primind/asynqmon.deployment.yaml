@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asynqmon
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: asynqmon
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: asynqmon
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: asynqmon
+          image: hibiken/asynqmon
+          env:
+            - name: REDIS_ADDR
+              value: redis:6379
+          ports:
+            - name: http
+              containerPort: 8080
