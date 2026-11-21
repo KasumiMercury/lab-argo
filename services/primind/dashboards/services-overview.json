@@ -31,7 +31,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -65,7 +65,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum(rate(http_requests_total[5m])) + sum(rate(rpc_server_call_duration_seconds_count[5m]))",
           "legendFormat": "Total",
           "refId": "A"
@@ -75,7 +75,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -109,7 +109,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum(rate(http_requests_total{status_code=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100 or vector(0)",
           "legendFormat": "Error Rate",
           "refId": "A"
@@ -119,7 +119,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -153,7 +153,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
           "legendFormat": "p95",
           "refId": "A"
@@ -163,7 +163,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -195,7 +195,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "count(count by(job) (http_requests_total)) + count(count by(rpc_service) (label_replace(rpc_server_call_duration_seconds_count, \"rpc_service\", \"$1\", \"rpc_method\", \"([^/]+)/.*\")))",
           "legendFormat": "Services",
           "refId": "A"
@@ -213,7 +213,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -256,7 +256,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by(rpc_service) (label_replace(rate(rpc_server_call_duration_seconds_count[5m]), \"rpc_service\", \"$1\", \"rpc_method\", \"([^/]+)/.*\"))",
           "legendFormat": "{{rpc_service}}",
           "refId": "A"
@@ -266,7 +266,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -309,7 +309,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by(rpc_method) (rate(rpc_server_call_duration_seconds_count[5m]))",
           "legendFormat": "{{rpc_method}}",
           "refId": "A"
@@ -319,7 +319,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -375,19 +375,19 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.50, sum by(le) (rate(rpc_server_call_duration_seconds_bucket{rpc_method=~\"auth\\\\.v1\\\\.AuthService/.*\"}[5m])))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum by(le) (rate(rpc_server_call_duration_seconds_bucket{rpc_method=~\"auth\\\\.v1\\\\.AuthService/.*\"}[5m])))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.99, sum by(le) (rate(rpc_server_call_duration_seconds_bucket{rpc_method=~\"auth\\\\.v1\\\\.AuthService/.*\"}[5m])))",
           "legendFormat": "p99",
           "refId": "C"
@@ -397,7 +397,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -453,19 +453,19 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.50, sum by(le) (rate(rpc_server_call_duration_seconds_bucket{rpc_method=~\"device\\\\.v1\\\\.DeviceService/.*\"}[5m])))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum by(le) (rate(rpc_server_call_duration_seconds_bucket{rpc_method=~\"device\\\\.v1\\\\.DeviceService/.*\"}[5m])))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.99, sum by(le) (rate(rpc_server_call_duration_seconds_bucket{rpc_method=~\"device\\\\.v1\\\\.DeviceService/.*\"}[5m])))",
           "legendFormat": "p99",
           "refId": "C"
@@ -475,7 +475,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -531,19 +531,19 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.50, sum by(le) (rate(rpc_server_call_duration_seconds_bucket{rpc_method=~\"task\\\\.v1\\\\.TaskService/.*\"}[5m])))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum by(le) (rate(rpc_server_call_duration_seconds_bucket{rpc_method=~\"task\\\\.v1\\\\.TaskService/.*\"}[5m])))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.99, sum by(le) (rate(rpc_server_call_duration_seconds_bucket{rpc_method=~\"task\\\\.v1\\\\.TaskService/.*\"}[5m])))",
           "legendFormat": "p99",
           "refId": "C"
@@ -553,7 +553,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -596,7 +596,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by(rpc_method) (rate(rpc_server_call_duration_seconds_count[5m])) > 0",
           "format": "table",
           "instant": true,
@@ -604,7 +604,7 @@
           "refId": "rate"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum by(rpc_method, le) (rate(rpc_server_call_duration_seconds_bucket[5m]))) and on(rpc_method) (sum by(rpc_method) (rate(rpc_server_call_duration_seconds_count[5m])) > 0)",
           "format": "table",
           "instant": true,
@@ -650,7 +650,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -693,7 +693,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by(job) (rate(http_requests_total[5m]))",
           "legendFormat": "{{job}}",
           "refId": "A"
@@ -703,7 +703,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -759,7 +759,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by(status_code) (rate(http_requests_total[5m]))",
           "legendFormat": "{{status_code}}",
           "refId": "A"
@@ -777,7 +777,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -833,19 +833,19 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.50, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"notification-throttling\"}[5m])))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"notification-throttling\"}[5m])))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.99, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"notification-throttling\"}[5m])))",
           "legendFormat": "p99",
           "refId": "C"
@@ -855,7 +855,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -911,19 +911,19 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.50, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"time-mgmt\"}[5m])))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"time-mgmt\"}[5m])))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.99, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"time-mgmt\"}[5m])))",
           "legendFormat": "p99",
           "refId": "C"
@@ -933,7 +933,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -989,19 +989,19 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.50, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"notification-invoker\"}[5m])))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"notification-invoker\"}[5m])))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.99, sum by(le) (rate(http_request_duration_seconds_bucket{job=\"notification-invoker\"}[5m])))",
           "legendFormat": "p99",
           "refId": "C"
@@ -1019,7 +1019,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -1062,7 +1062,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by(job) (rate(http_requests_total{status_code=~\"5..\"}[5m])) / sum by(job) (rate(http_requests_total[5m])) * 100",
           "legendFormat": "{{job}}",
           "refId": "A"
@@ -1072,7 +1072,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -1124,7 +1124,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by(status_code) (rate(http_requests_total{status_code=~\"4..|5..\"}[5m]))",
           "legendFormat": "{{status_code}}",
           "refId": "A"
@@ -1142,7 +1142,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -1194,7 +1194,7 @@
       "pluginVersion": "11.0.0",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by(job, path, method) (rate(http_requests_total[5m])) > 0",
           "format": "table",
           "instant": true,
@@ -1202,7 +1202,7 @@
           "refId": "rate"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum by(job, path, method, le) (rate(http_request_duration_seconds_bucket[5m]))) and on(job, path, method) (sum by(job, path, method) (rate(http_requests_total[5m])) > 0)",
           "format": "table",
           "instant": true,
@@ -1210,7 +1210,7 @@
           "refId": "latency"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "(sum by(job, path, method) (rate(http_requests_total{status_code=~\"5..\"}[5m])) / sum by(job, path, method) (rate(http_requests_total[5m])) * 100) and on(job, path, method) (sum by(job, path, method) (rate(http_requests_total[5m])) > 0)",
           "format": "table",
           "instant": true,

@@ -45,7 +45,7 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 | vaultwarden | Vaultwarden (SQLite on a 2Gi `ceph-rbd` volume), tailnet only at `https://vault.<tailnet>.ts.net`; daily backup to the NAS (`vaultwarden-backup` on `/nfs/k8s`, 30 days) | vaultwarden | 2 |
 | tolo | TOLO verification environment: the base of [tolo-manifest](https://github.com/pj-hoakari/tolo-manifest) pinned by commit, plus the cluster component `services/tolo/cluster` (Secrets, HTTPRoutes, CiliumNetworkPolicies, Firebase and hostname patches). Only web is published, at `tolo.mercuryksm.net` and `*.tolo.mercuryksm.net`; the environment is operated through web only | tolo | 2 |
 | tolo-previews | ApplicationSet of the TOLO preview environments, one Application `tolo-s<k>` per open tolo-manifest pull request labelled `preview` (see [TOLO previews](#tolo-previews)) | argocd | 3 |
-| primind | Backend of primind (the services of `compose.prod.yaml` in primind-root except web, which runs on Cloudflare Workers), published at `primind-api.mercuryksm.net` by its own remotely-managed tunnel (see [primind](#primind)) | primind | 2 |
+| primind | Backend of primind (the services of `compose.prod.yaml` in primind-root except web, which runs on Cloudflare Workers, and its Prometheus and Grafana, replaced by VictoriaMetrics and the cluster's Grafana), published at `primind-api.mercuryksm.net` by its own remotely-managed tunnel (see [primind](#primind)) | primind | 2 |
 
 - `argocd` and `cilium` have no resources finalizer: deleting their Application leaves Argo CD and the CNI running
 - `argocd` adopts the release installed by the lab-proxmox bootstrap, so its chart version must match `version` in lab-proxmox `kubernetes/argocd.yaml`
@@ -172,5 +172,7 @@ A comment `/preview` on a pull request of a TOLO service repository publishes an
 `services/primind` runs the backend of primind as it ran with `compose.prod.yaml` on the VM `primind`: the same images, the same Service names, and every key of its `.env` in the Secret `primind` (loaded with `envFrom` by the services that read the `.env`). Migrations run with atlas as an initContainer of central-backend and time-mgmt from `files/migrations`.
 
 - `cloudflared-api` connects to the remotely-managed tunnel of `CLOUDFLARE_TUNNEL_TOKEN_API`, whose ingress (in the Cloudflare dashboard) sends `primind-api.mercuryksm.net` to `http://central-backend:8080`. Only one environment may run a connector of this tunnel, or Cloudflare balances requests across two databases
-- The databases, Redis, NATS, Prometheus and Grafana keep their data on `ceph-rbd` (`data-<statefulset>-0`)
-- Grafana, Jaeger, Prometheus and asynqmon have ClusterIP Services only: `kubectl -n primind port-forward svc/grafana 3000`
+- The databases, Redis and NATS keep their data on `ceph-rbd` (`data-<statefulset>-0`)
+- Metrics go to VictoriaMetrics through the Prometheus-path OTLP receiver of Alloy (`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=alloy.logging.svc:9090`; the services fix the path `/api/v1/otlp/v1/metrics`). The dashboards `Services Overview` and `Throttle Overview` (`dashboards/`) are in the Grafana of victoria-metrics
+- Traces still go to the Jaeger in the namespace (in memory)
+- Jaeger and asynqmon have ClusterIP Services only: `kubectl -n primind port-forward svc/jaeger 16686`

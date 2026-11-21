@@ -1,0 +1,16 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: alloy
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: logging
+            app.kubernetes.io/name: alloy
+            app.kubernetes.io/instance: alloy
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP

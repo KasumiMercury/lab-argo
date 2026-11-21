@@ -33,7 +33,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "victoriametrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -115,7 +115,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by (outcome) (rate(throttle_packets_total[1m]))",
           "legendFormat": "{{outcome}}",
           "refId": "A"
@@ -127,7 +127,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "victoriametrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -205,7 +205,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by (lane) (rate(throttle_packets_total[1m]))",
           "legendFormat": "{{lane}}",
           "refId": "A"
@@ -217,7 +217,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "victoriametrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -295,7 +295,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by (phase) (rate(throttle_packets_total[1m]))",
           "legendFormat": "{{phase}}",
           "refId": "A"
@@ -307,7 +307,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "victoriametrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -385,7 +385,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by (phase) (rate(throttle_packets_shifted_total[1m]))",
           "legendFormat": "{{phase}}",
           "refId": "A"
@@ -405,7 +405,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "victoriametrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -483,7 +483,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "sum by (lane) (rate(throttle_packets_shifted_total[1m]))",
           "legendFormat": "{{lane}}",
           "refId": "A"
@@ -503,7 +503,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "victoriametrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -572,19 +572,19 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.5, sum by (le) (rate(throttle_planning_phase_duration_seconds_bucket[5m])))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum by (le) (rate(throttle_planning_phase_duration_seconds_bucket[5m])))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.99, sum by (le) (rate(throttle_planning_phase_duration_seconds_bucket[5m])))",
           "legendFormat": "p99",
           "refId": "C"
@@ -596,7 +596,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "victoriametrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -665,19 +665,19 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.5, sum by (le) (rate(throttle_commit_phase_duration_seconds_bucket[5m])))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum by (le) (rate(throttle_commit_phase_duration_seconds_bucket[5m])))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.99, sum by (le) (rate(throttle_commit_phase_duration_seconds_bucket[5m])))",
           "legendFormat": "p99",
           "refId": "C"
@@ -689,7 +689,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "victoriametrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -758,19 +758,19 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.5, sum by (le, lane) (rate(throttle_slot_calculation_duration_seconds_bucket[5m])))",
           "legendFormat": "p50 - {{lane}}",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.95, sum by (le, lane) (rate(throttle_slot_calculation_duration_seconds_bucket[5m])))",
           "legendFormat": "p95 - {{lane}}",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "victoriametrics" },
           "expr": "histogram_quantile(0.99, sum by (le, lane) (rate(throttle_slot_calculation_duration_seconds_bucket[5m])))",
           "legendFormat": "p99 - {{lane}}",
           "refId": "C"
@@ -787,7 +787,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "victoriametrics"
           },
           "fieldConfig": {
             "defaults": {
@@ -869,7 +869,7 @@
           },
           "targets": [
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": { "type": "prometheus", "uid": "victoriametrics" },
               "expr": "sum by (status_code) (rate(http_requests_total[1m]))",
               "legendFormat": "{{status_code}}",
               "refId": "A"
@@ -881,7 +881,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "victoriametrics"
           },
           "fieldConfig": {
             "defaults": {
@@ -950,19 +950,19 @@
           },
           "targets": [
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": { "type": "prometheus", "uid": "victoriametrics" },
               "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket[1m])))",
               "legendFormat": "p50",
               "refId": "A"
             },
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": { "type": "prometheus", "uid": "victoriametrics" },
               "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[1m])))",
               "legendFormat": "p95",
               "refId": "B"
             },
             {
-              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "datasource": { "type": "prometheus", "uid": "victoriametrics" },
               "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket[1m])))",
               "legendFormat": "p99",
               "refId": "C"

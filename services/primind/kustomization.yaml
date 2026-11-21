@@ -11,6 +11,7 @@ resources:
   - primind-gcp-credentials.sealedsecret.yaml
   - default-deny.ciliumnetworkpolicy.yaml
   - internet.ciliumnetworkpolicy.yaml
+  - alloy.ciliumnetworkpolicy.yaml
   - cloudflared-api.deployment.yaml
   - central-backend.deployment.yaml
   - central-backend.service.yaml
@@ -37,10 +38,6 @@ resources:
   - nats.service.yaml
   - jaeger.deployment.yaml
   - jaeger.service.yaml
-  - prometheus.statefulset.yaml
-  - prometheus.service.yaml
-  - grafana.statefulset.yaml
-  - grafana.service.yaml
   - asynqmon.deployment.yaml
   - asynqmon.service.yaml
 configMapGenerator:
@@ -64,16 +61,11 @@ configMapGenerator:
   - name: nats-bridge
     files:
       - config.json=files/nats-bridge.json
-  - name: prometheus
-    files:
-      - prometheus.yml=files/prometheus.yml
-  - name: grafana-datasources
-    files:
-      - files/grafana/datasources.yaml
-  - name: grafana-dashboard-providers
-    files:
-      - files/grafana/dashboards.yaml
-  - name: grafana-dashboards
+  - name: primind-dashboards
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
     files:
       - dashboards/services-overview.json
       - dashboards/throttle-overview.json
@@ -106,10 +98,6 @@ images:
     newTag: 2.10.29-alpine
   - name: jaegertracing/jaeger
     newTag: 2.23.0
-  - name: prom/prometheus
-    newTag: v3.16.0
-  - name: grafana/grafana
-    newTag: 13.3.1
   - name: hibiken/asynqmon
     newTag: 0.7.2
   - name: curlimages/curl

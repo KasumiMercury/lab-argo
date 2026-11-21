@@ -28,7 +28,7 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: jaeger:4318
             - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
-              value: prometheus:9090
+              value: alloy.logging.svc:9090
           ports:
             - name: http
               containerPort: 8080
