@@ -176,5 +176,5 @@ A comment `/preview` on a pull request of a TOLO service repository publishes an
 - `cloudflared-api` connects to the remotely-managed tunnel of `CLOUDFLARE_TUNNEL_TOKEN_API`, whose ingress (in the Cloudflare dashboard) sends `primind-api.mercuryksm.net` to `http://central-backend:8080`. Only one environment may run a connector of this tunnel, or Cloudflare balances requests across two databases
 - The databases, Redis and NATS keep their data on `ceph-rbd` (`data-<statefulset>-0`)
 - Metrics go to VictoriaMetrics through the Prometheus-path OTLP receiver of Alloy (`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=alloy.logging.svc:9090`; the services fix the path `/api/v1/otlp/v1/metrics`). The dashboards `Services Overview` and `Throttle Overview` (`dashboards/`) are in the Grafana of victoria-metrics
-- Traces still go to the Jaeger in the namespace (in memory)
-- Jaeger and asynqmon have ClusterIP Services only: `kubectl -n primind port-forward svc/jaeger 16686`
+- Traces go to Tempo through the OTLP receiver of Alloy (`OTEL_EXPORTER_OTLP_ENDPOINT=alloy.logging.svc:4318`) and are searched in Grafana with the datasource `Tempo`
+- asynqmon has a ClusterIP Service only: `kubectl -n primind port-forward svc/asynqmon 8080`

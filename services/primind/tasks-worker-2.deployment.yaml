@@ -36,6 +36,6 @@ spec:
             - name: REQUEST_TIMEOUT
               value: 30s
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: jaeger:4318
+              value: alloy.logging.svc:4318
             - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
               value: alloy.logging.svc:9090
