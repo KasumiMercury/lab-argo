@@ -1,193 +1,37 @@
 kube-prometheus-stack:
-  # Talos runs the controller-manager and scheduler as static pods (hostNetwork) bound to 0.0.0.0 and serves
-  # etcd metrics on :2381 of the control-plane node (patches/controlplane.yaml of lab-proxmox
-  # terraform/modules/talos_cluster). The static pods carry k8s-app, not the chart's default component label.
-  # kube-proxy is replaced by Cilium.
+  defaultRules:
+    create: false
+  alertmanager:
+    enabled: false
+  grafana:
+    enabled: false
+  kubernetesServiceMonitors:
+    enabled: false
   kubeApiServer:
-    serviceMonitor:
-      authorization: &vmagentToken
-        type: Bearer
-        credentials:
-          name: vmagent-k8s-token
-          key: token
+    enabled: false
   kubelet:
-    serviceMonitor:
-      authorization: *vmagentToken
-  coreDns:
-    serviceMonitor:
-      authorization: *vmagentToken
+    enabled: false
   kubeControllerManager:
-    service:
-      selector:
-        k8s-app: kube-controller-manager
-    serviceMonitor:
-      authorization: *vmagentToken
-  kubeScheduler:
-    service:
-      selector:
-        k8s-app: kube-scheduler
-    serviceMonitor:
-      authorization: *vmagentToken
-  # etcd is a Talos service, not a pod. The chart would scrape it through an Endpoints object, which Argo CD
-  # never syncs (excluded by default), so vmagent scrapes the control-plane node (k8s-hod) directly
-  # (VMStaticScrape kube-etcd in platform/victoria-metrics); kubeEtcd stays enabled for the etcd rules and dashboard.
+    enabled: false
+  coreDns:
+    enabled: false
+  kubeDns:
+    enabled: false
   kubeEtcd:
-    service:
-      enabled: false
-    serviceMonitor:
-      enabled: false
+    enabled: false
+  kubeScheduler:
+    enabled: false
   kubeProxy:
     enabled: false
-  defaultRules:
-    rules:
-      prometheus: false
-    disabled:
-      # They ask whether every Pod's requests fit on the nodes left after the largest one fails. Here the largest
-      # node (k8s-hod) is the only control plane, so nothing is rescheduled when it fails, and the HA branch of
-      # the expressions is not gated on the control-plane count, so they fire permanently
-      KubeMemoryOvercommit: true
-      KubeCPUOvercommit: true
-
+  kubeStateMetrics:
+    enabled: false
+  nodeExporter:
+    enabled: false
+  windowsMonitoring:
+    enabled: false
+  prometheusOperator:
+    enabled: false
   prometheus:
     enabled: false
-
-  # Slack #k8s-alert gets the alerts of the Loki ruler (notify="k8s-alert", platform/loki/rules/k8s-alerts.yaml)
-  # and every warning or critical alert of vmalert: the stack's default rules and the PrometheusRules of
-  # the Applications (CouchDB, ...). Info alerts (CPUThrottlingHigh, KubeQuotaAlmostFull, ...) and the
-  # always-firing Watchdog/InfoInhibitor go nowhere. Posted through the Slack App shared with pve-grafana and
-  # Zabbix (lab-proxmox, scope chat:write; invite the bot to the channel); its bot token is the Secret
-  # alertmanager-slack (task seal:slack), mounted at /etc/alertmanager/secrets/alertmanager-slack/.
-  alertmanager:
-    alertmanagerSpec:
-      secrets:
-        - alertmanager-slack
-      # The chart's default request is 200Mi; it uses ~30Mi
-      resources:
-        requests:
-          cpu: 10m
-          memory: 64Mi
-        limits:
-          memory: 128Mi
-    config:
-      route:
-        group_by: [alertname, namespace, node, container]
-        group_wait: 30s
-        group_interval: 5m
-        repeat_interval: 4h
-        receiver: "null"
-        routes:
-          - matchers:
-              - alertname =~ "Watchdog|InfoInhibitor"
-            receiver: "null"
-          - matchers:
-              - notify = "k8s-alert"
-            receiver: slack-k8s-alert
-          - matchers:
-              - severity =~ "warning|critical"
-            receiver: slack-k8s-alert
-      receivers:
-        - name: "null"
-        - name: slack-k8s-alert
-          slack_configs:
-            # Bot token through http_config: app_token_file together with update_message makes
-            # Alertmanager v0.34.1 panic while loading the configuration
-            - api_url: https://slack.com/api/chat.postMessage
-              http_config:
-                authorization:
-                  type: Bearer
-                  credentials_file: /etc/alertmanager/secrets/alertmanager-slack/bot-token
-              channel: "#k8s-alert"
-              send_resolved: true
-              # Resolving edits the original message instead of posting a new one
-              update_message: true
-              color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
-              title: '[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}'
-              # Loki rules link the logs dashboard, Prometheus rules their runbook
-              title_link: '{{ with (index .Alerts 0).Annotations.dashboard }}{{ . }}{{ else }}{{ (index .Alerts 0).Annotations.runbook_url }}{{ end }}'
-              text: |-
-                {{ range .Alerts }}*{{ with .Annotations.summary }}{{ . }}{{ else }}{{ .Labels.alertname }}{{ end }}*{{ with .Labels.namespace }} (`{{ . }}`){{ end }}
-                {{ with .Annotations.description }}{{ . }}{{ else }}{{ .Annotations.message }}{{ end }}
-                {{ end }}
-
-  grafana:
-    resources:
-      requests:
-        cpu: 20m
-        memory: 768Mi
-      limits:
-        memory: 1Gi
-    # Shared by the dashboard and datasource sidecars
-    prune: true
-    deleteDatasources:
-      - name: Prometheus
-        orgId: 1
-    sidecar:
-      datasources:
-        name: VictoriaMetrics
-        uid: victoriametrics
-        url: http://vmsingle-k8s.monitoring.svc:8428
-      resources:
-        requests:
-          cpu: 10m
-          memory: 96Mi
-        limits:
-          memory: 128Mi
-    admin:
-      # Delivered by templates/grafana-admin.sealedsecret.yaml (task seal:grafana)
-      existingSecret: grafana-admin
-      userKey: admin-user
-      passwordKey: admin-password
-    # Log in with GitHub (OAuth App, callback https://grafana.<tailnet>.ts.net/login/github). The client comes
-    # from the sealed grafana-github Secret (task seal:grafana-github) as GF_AUTH_GITHUB_CLIENT_ID/SECRET.
-    # Any GitHub account can authenticate, but only this user (numeric ID, as in Argo CD's RBAC) gets a role and
-    # the rest are refused. The admin password login stays as the way in when GitHub is unavailable.
-    envFromSecret: grafana-github
-    grafana.ini:
-      server:
-        root_url: https://grafana.tail4a681d.ts.net
-      auth.github:
-        enabled: true
-        # read:org: Grafana lists the user's teams on every login and fails (404) without it
-        scopes: user:email,read:org
-        role_attribute_path: "id == `88318012` && 'Admin' || ''"
-        role_attribute_strict: true
-    # Reachable on the tailnet as https://grafana.<tailnet>.ts.net
-    ingress:
-      enabled: true
-      ingressClassName: tailscale
-      hosts: []
-      path: /
-      tls:
-        - hosts:
-            - grafana
-    # Pod logs and Kubernetes events collected by Alloy (platform/alloy) into Loki (platform/loki)
-    additionalDataSources:
-      - name: Loki
-        uid: loki
-        type: loki
-        access: proxy
-        url: http://loki.logging.svc:3100
-        jsonData:
-          maxLines: 1000
-
-  prometheusOperator:
-    resources:
-      requests:
-        cpu: 10m
-        memory: 64Mi
-      limits:
-        memory: 128Mi
-  kube-state-metrics:
-    resources:
-      requests:
-        cpu: 10m
-        memory: 64Mi
-      limits:
-        memory: 128Mi
-  prometheus-node-exporter:
-    resources:
-      requests:
-        cpu: 10m
-        memory: 32Mi
-      limits:
-        memory: 64Mi
+  thanosRuler:
+    enabled: false

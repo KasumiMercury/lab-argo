@@ -1,9 +1,9 @@
 apiVersion: v2
 name: victoria-metrics
-description: VictoriaMetrics operator, single-node VictoriaMetrics, vmagent and vmalert for the Talos cluster
+description: VictoriaMetrics k8s stack (operator, VMSingle, VMAgent, VMAlert, VMAlertmanager, Grafana, exporters, default rules and dashboards) for the Talos cluster
 type: application
 version: 0.1.0
 dependencies:
-  - name: victoria-metrics-operator
-    version: 0.68.2
+  - name: victoria-metrics-k8s-stack
+    version: 0.98.1
     repository: oci://ghcr.io/victoriametrics/helm-charts

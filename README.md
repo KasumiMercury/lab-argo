@@ -26,8 +26,8 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 | snapshot-controller | snapshot-controller (piraeus; external-snapshotter CRDs and controller) | kube-system | -2 |
 | csi-driver-nfs | csi-driver-nfs + StorageClass `nfs-csi`, VolumeSnapshotClass `nfs-csi` | kube-system | -1 |
 | tailscale | tailscale-operator | tailscale | 0 |
-| kube-prometheus-stack | kube-prometheus-stack without Prometheus (Grafana, Alertmanager, exporters, default rules and ServiceMonitors); Alertmanager sends the Loki ruler alerts and every warning/critical vmalert alert to Slack #k8s-alert | monitoring | 1 |
-| victoria-metrics | VictoriaMetrics operator (converts ServiceMonitors, PodMonitors and PrometheusRules), VMSingle `k8s` (20Gi `ceph-rbd` volume, 15-day retention, Grafana datasource `VictoriaMetrics`), VMAgent `k8s` and VMAlert `k8s` (sends to the Alertmanager of kube-prometheus-stack) | monitoring | 1 |
+| kube-prometheus-stack | Prometheus Operator CRDs only (ServiceMonitor, PodMonitor, PrometheusRule, ...), until the Application is removed | monitoring | 1 |
+| victoria-metrics | victoria-metrics-k8s-stack: VictoriaMetrics operator (converts ServiceMonitors, PodMonitors and PrometheusRules), VMSingle `k8s` (20Gi `ceph-rbd` volume, 15-day retention, Grafana datasource `VictoriaMetrics`), VMAgent `k8s`, VMAlert `k8s`, VMAlertmanager `k8s`, Grafana, kube-state-metrics, node-exporter, default rules and dashboards (fetched by the sync-job at each sync); VMAlertmanager sends the Loki ruler alerts and every warning/critical vmalert alert to Slack #k8s-alert | monitoring | 1 |
 | loki | loki (grafana-community; monolithic, filesystem on a 10Gi `ceph-rbd` volume, 14-day retention), Grafana datasource `Loki`, dashboard `Logs overview`, ruler alerts on error spikes of the Kubernetes components and Cilium (`rules/k8s-alerts.yaml`); Loki has no authentication, so CiliumNetworkPolicy `loki` admits only Alloy, Grafana, vmagent and the nodes (alloy-talos runs on the host network) | logging | 1 |
 | alloy | alloy (one replica reading Pod logs through the API and Kubernetes events, job `kubernetes-events`; drops recurring lines that never need action); OTLP over HTTP on the tailnet at `https://otel.<tailnet>.ts.net` (Claude Code telemetry; drops `user.email`, metrics to VictoriaMetrics' OTLP endpoint, events to Loki's OTLP endpoint, where `service_name=~"claude-code.*"` is kept 400 days), dashboard `Claude Code` | logging | 2 |
 | alloy-talos | alloy (hostNetwork DaemonSet receiving the Talos service and kernel logs on 127.0.0.1:6050/6051, `namespace="talos"`, `container=<service>`) | logging | 2 |
@@ -57,8 +57,8 @@ Versions are not listed here: each component pins them in its `Chart.yaml`/`Char
 2. `task bootstrap` (applies `bootstrap/root.yaml` to the cluster in `KUBECONFIG`)
 3. Once `sealed-secrets` is healthy, seal the credentials with the new cluster's key, commit and push. With a key backup from `task backup:sealed-secrets`, run `task restore:sealed-secrets FILE=<backup>` instead and the committed SealedSecrets decrypt as they are:
    - `task seal:tailscale` → `platform/tailscale/templates/operator-oauth.sealedsecret.yaml` (OAuth client with the scopes and tag `tag:k8s-operator` described in the Tailscale operator docs)
-   - `task seal:grafana` → `platform/kube-prometheus-stack/templates/grafana-admin.sealedsecret.yaml`
-   - `task seal:slack` → `platform/kube-prometheus-stack/templates/alertmanager-slack.sealedsecret.yaml` (bot token of the Slack App shared with lab-proxmox, `vault_slack_bot_token`; the bot must be invited to #k8s-alert)
+   - `task seal:grafana` → `platform/victoria-metrics/templates/grafana-admin.sealedsecret.yaml`
+   - `task seal:slack` → `platform/victoria-metrics/templates/alertmanager-slack.sealedsecret.yaml` (bot token of the Slack App shared with lab-proxmox, `vault_slack_bot_token`; the bot must be invited to #k8s-alert)
 
    Until then the Tailscale operator, Grafana and Alertmanager pods wait for their Secrets
 4. To publish services on the internet (see [Publishing a service](#publishing-a-service)):

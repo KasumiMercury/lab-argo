@@ -1,6 +1,6 @@
 # Error spikes in the logs of the Kubernetes components (Talos services such as kubelet and etcd, CoreDNS,
 # Kubernetes events) and Cilium, evaluated by the Loki ruler and sent to the cluster's Alertmanager,
-# which routes notify="k8s-alert" to Slack #k8s-alert (platform/kube-prometheus-stack).
+# which routes notify="k8s-alert" to Slack #k8s-alert (platform/victoria-metrics).
 # The thresholds sit above what node reboots and deployments produce: those log a burst of errors for a
 # minute or two, so each rule also needs the errors to go on for a while (for:).
 groups:
