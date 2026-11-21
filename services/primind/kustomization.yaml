@@ -36,8 +36,6 @@ resources:
   - redis.service.yaml
   - nats.statefulset.yaml
   - nats.service.yaml
-  - jaeger.deployment.yaml
-  - jaeger.service.yaml
   - asynqmon.deployment.yaml
   - asynqmon.service.yaml
 configMapGenerator:
@@ -98,8 +96,6 @@ images:
     newTag: 8.10.2
   - name: nats
     newTag: 2.10.29-alpine
-  - name: jaegertracing/jaeger
-    newTag: 2.23.0
   - name: hibiken/asynqmon
     newTag: 0.7.2
   - name: curlimages/curl

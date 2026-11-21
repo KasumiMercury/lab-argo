@@ -1,0 +1,18 @@
+tempo:
+  tempo:
+    reportingEnabled: false
+    retention: 168h
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        memory: 1Gi
+
+  persistence:
+    enabled: true
+    storageClassName: ceph-rbd
+    size: 10Gi
+
+  serviceMonitor:
+    enabled: true

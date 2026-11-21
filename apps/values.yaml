@@ -87,6 +87,13 @@ platform:
     syncOptions:
       # ServiceMonitor CRD comes with prometheus-operator-crds in an earlier wave
       - SkipDryRunOnMissingResource=true
+  tempo:
+    namespace: tracing
+    releaseName: tempo
+    syncWave: "1"
+    finalizer: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
   alloy:
     namespace: logging
     releaseName: alloy
