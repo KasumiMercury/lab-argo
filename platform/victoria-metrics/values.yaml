@@ -156,7 +156,7 @@ victoria-metrics-k8s-stack:
           access: proxy
           uid: victoriametrics
           isDefault: true
-    # Pod logs and Kubernetes events collected by Alloy (platform/alloy) into Loki (platform/loki)
+    # Pod logs and Kubernetes events collected by Alloy (platform/alloy) into Loki (platform/loki), traces received by Alloy into Tempo (platform/tempo)
     extra:
       - name: Loki
         uid: loki
@@ -165,6 +165,11 @@ victoria-metrics-k8s-stack:
         url: http://loki.logging.svc:3100
         jsonData:
           maxLines: 1000
+      - name: Tempo
+        uid: tempo
+        type: tempo
+        access: proxy
+        url: http://tempo.tracing.svc:3200
 
   grafana:
     resources:

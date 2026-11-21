@@ -1,0 +1,9 @@
+apiVersion: v2
+name: tempo
+description: Tempo (single binary, local storage on a Ceph RBD volume) holding the traces received by Alloy
+type: application
+version: 0.1.0
+dependencies:
+  - name: tempo
+    version: 3.2.1
+    repository: oci://ghcr.io/grafana-community/helm-charts

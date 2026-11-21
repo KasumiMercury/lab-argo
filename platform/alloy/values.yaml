@@ -184,6 +184,7 @@ alloy:
           output {
             metrics = [otelcol.processor.attributes.drop_email.input]
             logs    = [otelcol.processor.attributes.drop_email.input]
+            traces  = [otelcol.processor.attributes.drop_email.input]
           }
         }
 
@@ -196,6 +197,7 @@ alloy:
           output {
             metrics = [otelcol.processor.batch.default.input]
             logs    = [otelcol.processor.batch.default.input]
+            traces  = [otelcol.processor.batch.default.input]
           }
         }
 
@@ -203,6 +205,7 @@ alloy:
           output {
             metrics = [otelcol.exporter.otlphttp.victoriametrics.input]
             logs    = [otelcol.exporter.otlphttp.loki.input]
+            traces  = [otelcol.exporter.otlphttp.tempo.input]
           }
         }
 
@@ -239,6 +242,12 @@ alloy:
         otelcol.exporter.otlphttp "loki" {
           client {
             endpoint = "http://loki.logging.svc:3100/otlp"
+          }
+        }
+
+        otelcol.exporter.otlphttp "tempo" {
+          client {
+            endpoint = "http://tempo.tracing.svc:4318"
           }
         }
 
