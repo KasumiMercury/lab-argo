@@ -7,10 +7,10 @@ labels:
       app.kubernetes.io/managed-by: argocd
     includeSelectors: false
 resources:
-  - https://github.com/pj-hoakari/tolo-manifest//base?ref=f9612b73ff91837510829376d27fc867a8b1f131
+  - https://github.com/pj-hoakari/tolo-manifest//base?ref=46079b5ecb3012581f368777b947ae93a1810b8b
   - edge-bridge.httproute.yaml
   - edge-bridge-public.ciliumnetworkpolicy.yaml
 components:
-  - https://github.com/pj-hoakari/tolo-manifest//components/idp?ref=f9612b73ff91837510829376d27fc867a8b1f131
+  - https://github.com/pj-hoakari/tolo-manifest//components/idp?ref=46079b5ecb3012581f368777b947ae93a1810b8b
   - cluster
   - idp
